@@ -89,14 +89,13 @@ func (g *grison) getJSON() ([]byte, error) {
 	return jsonMarshal(g.objects)
 }
 
-func (g *grison) marshalAny(obj interface{}) ([]byte, error) {
-	v := reflect.ValueOf(obj)
-	switch v.Kind() {
+func (g *grison) marshalAny(obj reflect.Value) ([]byte, error) {
+	switch obj.Kind() {
 	case reflect.Ptr:
-		if g.isNodeType(v.Elem().Type()) {
-			return g.marshalNode(v.Interface())
+		if g.isNodeType(obj.Elem().Type()) {
+			return g.marshalNode(obj)
 		}
-		return g.marshalAny(v.Elem().Interface())
+		return g.marshalAny(obj.Elem())
 	case reflect.Interface:
 		panic("interface")
 	case reflect.Struct:
@@ -106,7 +105,7 @@ func (g *grison) marshalAny(obj interface{}) ([]byte, error) {
 	case reflect.Map:
 		return g.marshalMap(obj)
 	default:
-		r, err := jsonMarshal(obj)
+		r, err := jsonMarshal(obj.Interface())
 		if err != nil {
 			return []byte{}, err
 		}
@@ -117,11 +116,11 @@ func (g *grison) marshalAny(obj interface{}) ([]byte, error) {
 	}
 }
 
-func (g *grison) marshalNode(obj interface{}) ([]byte, error) {
-	id, exists := g.allocate(obj)
-	eobj := reflect.ValueOf(obj).Elem().Interface()
+func (g *grison) marshalNode(obj reflect.Value) ([]byte, error) {
+	id, exists := g.allocate(obj.Interface())
+	eobj := obj.Elem().Interface()
 	if !exists {
-		rm, err := g.marshalStruct(eobj)
+		rm, err := g.marshalStruct(reflect.ValueOf(eobj))
 		if err != nil {
 			return nil, err
 		}
@@ -131,26 +130,25 @@ func (g *grison) marshalNode(obj interface{}) ([]byte, error) {
 	return jsonMarshal(ref)
 }
 
-func (g *grison) marshalStruct(obj interface{}) ([]byte, error) {
-	v := reflect.ValueOf(obj)
+func (g *grison) marshalStruct(obj reflect.Value) ([]byte, error) {
 	//if g.isNodeType(v.Type()) {
 	//	return nil, errors.New("Node object used as embedded structure.")
 	//}
 	b := []byte("{")
-	tp := v.Type()
-	for i := 0; i < v.NumField(); i++ {
+	tp := obj.Type()
+	for i := 0; i < obj.NumField(); i++ {
 		field, err := json.Marshal(tp.Field(i).Name)
 		if err != nil {
 			return []byte{}, err
 		}
-		value, err := g.marshalAny(v.Field(i).Interface())
+		value, err := g.marshalAny(obj.Field(i))
 		if err != nil {
 			return []byte{}, err
 		}
 		b = append(b, field...)
 		b = append(b, []byte(":")...)
 		b = append(b, value...)
-		if i < v.NumField()-1 {
+		if i < obj.NumField()-1 {
 			b = append(b, []byte(",")...)
 		}
 	}
@@ -158,19 +156,18 @@ func (g *grison) marshalStruct(obj interface{}) ([]byte, error) {
 	return b, nil
 }
 
-func (g *grison) marshalSlice(obj interface{}) ([]byte, error) {
-	v := reflect.ValueOf(obj)
-	if v.Type() == reflect.TypeOf([]byte{}) {
-		return jsonMarshal(obj)
+func (g *grison) marshalSlice(obj reflect.Value) ([]byte, error) {
+	if obj.Type() == reflect.TypeOf([]byte{}) {
+		return jsonMarshal(obj.Interface())
 	}
 	b := []byte("[")
-	for i := 0; i < v.Len(); i++ {
-		elem, err := g.marshalAny(v.Index(i).Interface())
+	for i := 0; i < obj.Len(); i++ {
+		elem, err := g.marshalAny(obj.Index(i))
 		if err != nil {
 			return []byte{}, err
 		}
 		b = append(b, elem...)
-		if i < v.Len()-1 {
+		if i < obj.Len()-1 {
 			b = append(b, []byte(",")...)
 		}
 	}
@@ -178,18 +175,17 @@ func (g *grison) marshalSlice(obj interface{}) ([]byte, error) {
 	return b, nil
 }
 
-func (g *grison) marshalMap(obj interface{}) ([]byte, error) {
-	v := reflect.ValueOf(obj)
+func (g *grison) marshalMap(obj reflect.Value) ([]byte, error) {
 	b := []byte("{")
-	keys := v.MapKeys()
+	keys := obj.MapKeys()
 	for i, k := range keys {
-		key, err := g.marshalAny(k.Interface())
+		key, err := g.marshalAny(k)
 		if err != nil {
 			return []byte{}, err
 		}
 		b = append(b, key...)
 		b = append(b, []byte(":")...)
-		elem, err := g.marshalAny(v.MapIndex(k).Interface())
+		elem, err := g.marshalAny(obj.MapIndex(k))
 		if err != nil {
 			return []byte{}, err
 		}
@@ -212,7 +208,7 @@ func Marshal(m interface{}) ([]byte, error) {
 	for i := 0; i < ms.NumField(); i++ {
 		fld := ms.Field(i)
 		for j := 0; j < fld.Len(); j++ {
-			_, err = g.marshalAny(fld.Index(j).Interface())
+			_, err = g.marshalAny(fld.Index(j))
 			if err != nil {
 				return nil, err
 			}
