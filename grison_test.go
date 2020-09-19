@@ -84,14 +84,14 @@ func TestSlices(t *testing.T) {
 			},
 		},
 	}
-	MarshalTest(t, m, `{"Node":{"#1":{"A":["a","b","c"],"B":[[4,5],[6],[]]}}}`)
+	MarshalTest(t, m, `{"Node":{"#1":{"A":["a","b","c"],"B":[[4,5],[6],null]}}}`)
 }
 
 func TestMaps(t *testing.T) {
 	type Node struct {
 		A map[string]int
-		//B map[int]string
-		//C map[int]map[int]int
+		B map[int]string
+		C map[int]map[int]int
 	}
 	type Master struct {
 		Node []*Node
@@ -100,9 +100,13 @@ func TestMaps(t *testing.T) {
 		Node: []*Node{
 			&Node{
 				A: map[string]int{"a": 1, "b": 2, "c": 3},
-				//B: map[int]string{1: "a", 2: "b", 3: "c"},
+				B: map[int]string{1: "a", 2: "b", 3: "c"},
+				C: map[int]map[int]int{
+					0: map[int]int{1: 2, 3: 4},
+					5: map[int]int{6: 7},
+				},
 			},
 		},
 	}
-	MarshalTest(t, m, `{"Node":{"#1":{"A":{"a":1,"b":2,"c":3}}}}`)
+	MarshalTest(t, m, `{"Node":{"#1":{"A":{"a":1,"b":2,"c":3},"B":{"1":"a","2":"b","3":"c"},"C":{"0":{"1":2,"3":4},"5":{"6":7}}}}}`)
 }

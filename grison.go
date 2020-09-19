@@ -60,6 +60,7 @@ func (g *grison) extractSchema(m interface{}) error {
 		g.types[fldtp] = fldname
 		g.objects[fldname] = make(map[string]json.RawMessage)
 	}
+	// TODO: There should be no embedded node instances.
 	return nil
 }
 
@@ -131,71 +132,46 @@ func (g *grison) marshalNode(obj reflect.Value) ([]byte, error) {
 }
 
 func (g *grison) marshalStruct(obj reflect.Value) ([]byte, error) {
-	//if g.isNodeType(v.Type()) {
-	//	return nil, errors.New("Node object used as embedded structure.")
-	//}
-	b := []byte("{")
+	m := make(map[string]json.RawMessage)
 	tp := obj.Type()
 	for i := 0; i < obj.NumField(); i++ {
-		field, err := json.Marshal(tp.Field(i).Name)
+		key := tp.Field(i).Name
+		elem, err := g.marshalAny(obj.Field(i))
 		if err != nil {
 			return []byte{}, err
 		}
-		value, err := g.marshalAny(obj.Field(i))
-		if err != nil {
-			return []byte{}, err
-		}
-		b = append(b, field...)
-		b = append(b, []byte(":")...)
-		b = append(b, value...)
-		if i < obj.NumField()-1 {
-			b = append(b, []byte(",")...)
-		}
+		m[key] = elem
 	}
-	b = append(b, []byte("}")...)
-	return b, nil
+	return jsonMarshal(m)
 }
 
 func (g *grison) marshalSlice(obj reflect.Value) ([]byte, error) {
 	if obj.Type() == reflect.TypeOf([]byte{}) {
 		return jsonMarshal(obj.Interface())
 	}
-	b := []byte("[")
+	var s []json.RawMessage
 	for i := 0; i < obj.Len(); i++ {
 		elem, err := g.marshalAny(obj.Index(i))
 		if err != nil {
 			return []byte{}, err
 		}
-		b = append(b, elem...)
-		if i < obj.Len()-1 {
-			b = append(b, []byte(",")...)
-		}
+		s = append(s, elem)
 	}
-	b = append(b, []byte("]")...)
-	return b, nil
+	return jsonMarshal(s)
 }
 
 func (g *grison) marshalMap(obj reflect.Value) ([]byte, error) {
-	b := []byte("{")
+	m := make(map[string]json.RawMessage)
 	keys := obj.MapKeys()
-	for i, k := range keys {
-		key, err := g.marshalAny(k)
-		if err != nil {
-			return []byte{}, err
-		}
-		b = append(b, key...)
-		b = append(b, []byte(":")...)
+	for _, k := range keys {
+		key := fmt.Sprintf("%v", k.Interface())
 		elem, err := g.marshalAny(obj.MapIndex(k))
 		if err != nil {
 			return []byte{}, err
 		}
-		b = append(b, elem...)
-		if i < len(keys)-1 {
-			b = append(b, []byte(",")...)
-		}
+		m[key] = elem
 	}
-	b = append(b, []byte("}")...)
-	return b, nil
+	return jsonMarshal(m)
 }
 
 func Marshal(m interface{}) ([]byte, error) {
