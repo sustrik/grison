@@ -18,6 +18,7 @@ func jsonMarshal(v interface{}) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
+// Encoder handles encoding of graphs into grison format.
 type Encoder struct {
 	// Node types (the structs, not the pointers).
 	types map[reflect.Type]string
@@ -173,6 +174,7 @@ func (g *Encoder) marshalMap(obj reflect.Value) ([]byte, error) {
 	return jsonMarshal(m)
 }
 
+// Marshal encodes the supplied graph into grison format.
 func Marshal(m interface{}) ([]byte, error) {
 	var g Encoder
 	err := g.extractSchema(m)
