@@ -1,4 +1,4 @@
-package main
+package grison
 
 import (
 	"bytes"
@@ -190,39 +190,4 @@ func Marshal(m interface{}) ([]byte, error) {
 		}
 	}
 	return g.getJSON()
-}
-
-///////////////////////////////////////////
-
-type Foo struct {
-	B *Bar
-}
-
-type Bar struct {
-	F *Foo
-}
-
-// master structure
-type MyGraph struct {
-	Foos []*Foo
-	Bars []*Bar
-}
-
-func main() {
-	mg := &MyGraph{
-		Foos: []*Foo{
-			&Foo{},
-		},
-		Bars: []*Bar{
-			&Bar{},
-		},
-	}
-	mg.Foos[0].B = mg.Bars[0]
-	mg.Bars[0].F = mg.Foos[0]
-
-	gs, err := Marshal(mg)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("%v\n", string(gs))
 }
