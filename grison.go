@@ -30,81 +30,84 @@ type Encoder struct {
 	id uint64
 }
 
-func (g *Encoder) extractSchema(m interface{}) error {
-	g.types = make(map[reflect.Type]string)
-	g.objects = make(map[string]map[string]json.RawMessage)
-	g.ids = make(map[interface{}]string)
+// NewEncoder creates new grison encoder, based on the supplied master structure.
+func NewEncoder(m interface{}) (*Encoder, error) {
+	enc := &Encoder{
+		types:   make(map[reflect.Type]string),
+		objects: make(map[string]map[string]json.RawMessage),
+		ids:     make(map[interface{}]string),
+	}
 	tp := reflect.TypeOf(m)
 	if tp.Kind() != reflect.Ptr {
-		return fmt.Errorf("master structure must be passed as a pointer, is %T", m)
+		return nil, fmt.Errorf("master structure must be passed as a pointer, is %T", m)
 	}
 	tp = tp.Elem()
 	if tp.Kind() != reflect.Struct {
-		return fmt.Errorf("master structure is not a structure, is %T", m)
+		return nil, fmt.Errorf("master structure is not a structure, is %T", m)
 	}
 	for i := 0; i < tp.NumField(); i++ {
 		fldtp := tp.Field(i).Type
 		fldname := tp.Field(i).Name
 		if fldtp.Kind() != reflect.Slice && fldtp.Kind() != reflect.Map {
-			return fmt.Errorf("master field %s, in not a map or a slice", fldname)
+			return nil, fmt.Errorf("master field %s, in not a map or a slice", fldname)
 		}
 		fldtp = fldtp.Elem()
 		if fldtp.Kind() != reflect.Ptr {
-			return fmt.Errorf("master field %s doesn't contain pointers", fldname)
+			return nil, fmt.Errorf("master field %s doesn't contain pointers", fldname)
 		}
 		fldtp = fldtp.Elem()
 		if fldtp.Kind() != reflect.Struct {
-			return fmt.Errorf("master field %s doesn't contain pointers to structs", fldname)
+			return nil, fmt.Errorf("master field %s doesn't contain pointers to structs", fldname)
 		}
 		// TODO: Check for duplicate types.
-		g.types[fldtp] = fldname
-		g.objects[fldname] = make(map[string]json.RawMessage)
+		enc.types[fldtp] = fldname
+		enc.objects[fldname] = make(map[string]json.RawMessage)
 	}
 	// TODO: There should be no embedded node instances.
-	return nil
+	return enc, nil
 }
 
-func (g *Encoder) isNodeType(tp reflect.Type) bool {
-	_, ok := g.types[tp]
+func (enc *Encoder) isNodeType(tp reflect.Type) bool {
+	_, ok := enc.types[tp]
 	return ok
 }
 
-func (g *Encoder) allocate(obj interface{}) (string, bool) {
+func (enc *Encoder) allocate(obj interface{}) (string, bool) {
 	// Use the pointer as a hash key.
-	id, ok := g.ids[obj]
+	id, ok := enc.ids[obj]
 	if ok {
 		return id, true
 	}
 	// Generate new ID.
-	g.id++
-	id = fmt.Sprintf("#%d", g.id)
-	g.ids[obj] = id
+	enc.id++
+	id = fmt.Sprintf("#%d", enc.id)
+	enc.ids[obj] = id
 	return id, false
 }
 
-func (g *Encoder) insert(tp reflect.Type, id string, rm json.RawMessage) {
-	g.objects[g.types[tp]][id] = rm
+func (enc *Encoder) insert(tp reflect.Type, id string, rm json.RawMessage) {
+	enc.objects[enc.types[tp]][id] = rm
 }
 
-func (g *Encoder) getJSON() ([]byte, error) {
-	return jsonMarshal(g.objects)
+func (enc *Encoder) getJSON() ([]byte, error) {
+	return jsonMarshal(enc.objects)
 }
 
-func (g *Encoder) marshalAny(obj reflect.Value) ([]byte, error) {
+func (enc *Encoder) marshalAny(obj reflect.Value) ([]byte, error) {
 	switch obj.Kind() {
 	case reflect.Ptr:
-		if g.isNodeType(obj.Elem().Type()) {
-			return g.marshalNode(obj)
+		if enc.isNodeType(obj.Elem().Type()) {
+			return enc.marshalNode(obj)
 		}
-		return g.marshalAny(obj.Elem())
+		return enc.marshalAny(obj.Elem())
 	case reflect.Interface:
 		panic("interface")
 	case reflect.Struct:
-		return g.marshalStruct(obj)
+		return enc.marshalStruct(obj)
 	case reflect.Slice:
-		return g.marshalSlice(obj)
+		return enc.marshalSlice(obj)
 	case reflect.Map:
-		return g.marshalMap(obj)
+		return enc.marshalMap(obj)
 	default:
 		r, err := jsonMarshal(obj.Interface())
 		if err != nil {
@@ -117,26 +120,26 @@ func (g *Encoder) marshalAny(obj reflect.Value) ([]byte, error) {
 	}
 }
 
-func (g *Encoder) marshalNode(obj reflect.Value) ([]byte, error) {
-	id, exists := g.allocate(obj.Interface())
+func (enc *Encoder) marshalNode(obj reflect.Value) ([]byte, error) {
+	id, exists := enc.allocate(obj.Interface())
 	eobj := obj.Elem().Interface()
 	if !exists {
-		rm, err := g.marshalStruct(reflect.ValueOf(eobj))
+		rm, err := enc.marshalStruct(reflect.ValueOf(eobj))
 		if err != nil {
 			return nil, err
 		}
-		g.insert(reflect.TypeOf(eobj), id, rm)
+		enc.insert(reflect.TypeOf(eobj), id, rm)
 	}
-	ref := fmt.Sprintf("&%s:%s", g.types[reflect.TypeOf(eobj)], id)
+	ref := fmt.Sprintf("&%s:%s", enc.types[reflect.TypeOf(eobj)], id)
 	return jsonMarshal(ref)
 }
 
-func (g *Encoder) marshalStruct(obj reflect.Value) ([]byte, error) {
+func (enc *Encoder) marshalStruct(obj reflect.Value) ([]byte, error) {
 	m := make(map[string]json.RawMessage)
 	tp := obj.Type()
 	for i := 0; i < obj.NumField(); i++ {
 		key := tp.Field(i).Name
-		elem, err := g.marshalAny(obj.Field(i))
+		elem, err := enc.marshalAny(obj.Field(i))
 		if err != nil {
 			return []byte{}, err
 		}
@@ -145,13 +148,13 @@ func (g *Encoder) marshalStruct(obj reflect.Value) ([]byte, error) {
 	return jsonMarshal(m)
 }
 
-func (g *Encoder) marshalSlice(obj reflect.Value) ([]byte, error) {
+func (enc *Encoder) marshalSlice(obj reflect.Value) ([]byte, error) {
 	if obj.Type() == reflect.TypeOf([]byte{}) {
 		return jsonMarshal(obj.Interface())
 	}
 	var s []json.RawMessage
 	for i := 0; i < obj.Len(); i++ {
-		elem, err := g.marshalAny(obj.Index(i))
+		elem, err := enc.marshalAny(obj.Index(i))
 		if err != nil {
 			return []byte{}, err
 		}
@@ -160,12 +163,12 @@ func (g *Encoder) marshalSlice(obj reflect.Value) ([]byte, error) {
 	return jsonMarshal(s)
 }
 
-func (g *Encoder) marshalMap(obj reflect.Value) ([]byte, error) {
+func (enc *Encoder) marshalMap(obj reflect.Value) ([]byte, error) {
 	m := make(map[string]json.RawMessage)
 	keys := obj.MapKeys()
 	for _, k := range keys {
 		key := fmt.Sprintf("%v", k.Interface())
-		elem, err := g.marshalAny(obj.MapIndex(k))
+		elem, err := enc.marshalAny(obj.MapIndex(k))
 		if err != nil {
 			return []byte{}, err
 		}
@@ -176,8 +179,7 @@ func (g *Encoder) marshalMap(obj reflect.Value) ([]byte, error) {
 
 // Marshal encodes the supplied graph into grison format.
 func Marshal(m interface{}) ([]byte, error) {
-	var g Encoder
-	err := g.extractSchema(m)
+	enc, err := NewEncoder(m)
 	if err != nil {
 		return nil, err
 	}
@@ -185,11 +187,11 @@ func Marshal(m interface{}) ([]byte, error) {
 	for i := 0; i < ms.NumField(); i++ {
 		fld := ms.Field(i)
 		for j := 0; j < fld.Len(); j++ {
-			_, err = g.marshalAny(fld.Index(j))
+			_, err = enc.marshalAny(fld.Index(j))
 			if err != nil {
 				return nil, err
 			}
 		}
 	}
-	return g.getJSON()
+	return enc.getJSON()
 }
