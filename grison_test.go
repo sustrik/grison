@@ -110,3 +110,21 @@ func TestMaps(t *testing.T) {
 	}
 	MarshalTest(t, m, `{"Node":{"#1":{"A":{"a":1,"b":2,"c":3},"B":{"1":"a","2":"b","3":"c"},"C":{"0":{"1":2,"3":4},"5":{"6":7}}}}}`)
 }
+
+func TestLoop(t *testing.T) {
+	type Node struct {
+		N *Node
+	}
+	type Master struct {
+		Node []*Node
+	}
+	m := &Master{
+		Node: []*Node{
+			&Node{},
+			&Node{},
+		},
+	}
+	m.Node[0].N = m.Node[1]
+	m.Node[1].N = m.Node[0]
+	MarshalTest(t, m, `{"Node":{"#1":{"N":"&Node:#2"},"#2":{"N":"&Node:#1"}}}`)
+}
