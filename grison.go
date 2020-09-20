@@ -1,22 +1,10 @@
 package grison
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"reflect"
 )
-
-func jsonMarshal(v interface{}) ([]byte, error) {
-	b := bytes.Buffer{}
-	enc := json.NewEncoder(&b)
-	enc.SetEscapeHTML(false)
-	err := enc.Encode(v)
-	if err != nil {
-		return nil, err
-	}
-	return b.Bytes(), nil
-}
 
 // Encoder handles encoding of graphs into grison format.
 type Encoder struct {
@@ -90,7 +78,7 @@ func (enc *Encoder) insert(tp reflect.Type, id string, rm json.RawMessage) {
 }
 
 func (enc *Encoder) getJSON() ([]byte, error) {
-	return jsonMarshal(enc.objects)
+	return json.Marshal(enc.objects)
 }
 
 func (enc *Encoder) marshalAny(obj reflect.Value) ([]byte, error) {
@@ -109,12 +97,12 @@ func (enc *Encoder) marshalAny(obj reflect.Value) ([]byte, error) {
 	case reflect.Map:
 		return enc.marshalMap(obj)
 	default:
-		r, err := jsonMarshal(obj.Interface())
+		r, err := json.Marshal(obj.Interface())
 		if err != nil {
 			return []byte{}, err
 		}
-		if len(r) > 0 && string(r[0:2]) == "\"&" {
-			r = append([]byte("\"&"), r[1:]...)
+		if len(r) > 0 && string(r[0:2]) == "\"^" {
+			r = append([]byte("\"^"), r[1:]...)
 		}
 		return r, nil
 	}
@@ -130,8 +118,8 @@ func (enc *Encoder) marshalNode(obj reflect.Value) ([]byte, error) {
 		}
 		enc.insert(reflect.TypeOf(eobj), id, rm)
 	}
-	ref := fmt.Sprintf("&%s:%s", enc.types[reflect.TypeOf(eobj)], id)
-	return jsonMarshal(ref)
+	ref := fmt.Sprintf("^%s:%s", enc.types[reflect.TypeOf(eobj)], id)
+	return json.Marshal(ref)
 }
 
 func (enc *Encoder) marshalStruct(obj reflect.Value) ([]byte, error) {
@@ -145,12 +133,12 @@ func (enc *Encoder) marshalStruct(obj reflect.Value) ([]byte, error) {
 		}
 		m[key] = elem
 	}
-	return jsonMarshal(m)
+	return json.Marshal(m)
 }
 
 func (enc *Encoder) marshalSlice(obj reflect.Value) ([]byte, error) {
 	if obj.Type() == reflect.TypeOf([]byte{}) {
-		return jsonMarshal(obj.Interface())
+		return json.Marshal(obj.Interface())
 	}
 	var s []json.RawMessage
 	for i := 0; i < obj.Len(); i++ {
@@ -160,7 +148,7 @@ func (enc *Encoder) marshalSlice(obj reflect.Value) ([]byte, error) {
 		}
 		s = append(s, elem)
 	}
-	return jsonMarshal(s)
+	return json.Marshal(s)
 }
 
 func (enc *Encoder) marshalMap(obj reflect.Value) ([]byte, error) {
@@ -174,7 +162,7 @@ func (enc *Encoder) marshalMap(obj reflect.Value) ([]byte, error) {
 		}
 		m[key] = elem
 	}
-	return jsonMarshal(m)
+	return json.Marshal(m)
 }
 
 // Marshal encodes the supplied graph into grison format.

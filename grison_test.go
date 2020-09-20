@@ -55,13 +55,13 @@ func TestRefEscape(t *testing.T) {
 	m := &Master{
 		Node: []*Node{
 			&Node{
-				A: "&foo",
-				B: "&&foo",
-				C: "foo&bar",
+				A: "^foo",
+				B: "^^foo",
+				C: "foo^bar",
 			},
 		},
 	}
-	MarshalTest(t, m, `{"Node":{"#1":{"A":"&&foo","B":"&&&foo","C":"foo&bar"}}}`)
+	MarshalTest(t, m, `{"Node":{"#1":{"A":"^^foo","B":"^^^foo","C":"foo^bar"}}}`)
 }
 
 func TestSlices(t *testing.T) {
@@ -92,6 +92,7 @@ func TestMaps(t *testing.T) {
 		A map[string]int
 		B map[int]string
 		C map[int]map[int]int
+		D map[int]int
 	}
 	type Master struct {
 		Node []*Node
@@ -105,10 +106,11 @@ func TestMaps(t *testing.T) {
 					0: map[int]int{1: 2, 3: 4},
 					5: map[int]int{6: 7},
 				},
+				D: map[int]int{},
 			},
 		},
 	}
-	MarshalTest(t, m, `{"Node":{"#1":{"A":{"a":1,"b":2,"c":3},"B":{"1":"a","2":"b","3":"c"},"C":{"0":{"1":2,"3":4},"5":{"6":7}}}}}`)
+	MarshalTest(t, m, `{"Node":{"#1":{"A":{"a":1,"b":2,"c":3},"B":{"1":"a","2":"b","3":"c"},"C":{"0":{"1":2,"3":4},"5":{"6":7}},"D":{}}}}`)
 }
 
 func TestLoop(t *testing.T) {
@@ -126,5 +128,5 @@ func TestLoop(t *testing.T) {
 	}
 	m.Node[0].N = m.Node[1]
 	m.Node[1].N = m.Node[0]
-	MarshalTest(t, m, `{"Node":{"#1":{"N":"&Node:#2"},"#2":{"N":"&Node:#1"}}}`)
+	MarshalTest(t, m, `{"Node":{"#1":{"N":"^Node:#2"},"#2":{"N":"^Node:#1"}}}`)
 }
