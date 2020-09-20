@@ -8,12 +8,20 @@ import (
 func MarshalTest(t *testing.T, m interface{}, expected string) {
 	b, err := Marshal(m)
 	if err != nil {
-		t.Errorf("error encountered: %v", err)
+		t.Errorf("encoding error encountered: %v", err)
 	}
 	actual := strings.TrimSpace(string(b))
 	if actual != expected {
-		t.Errorf("marshal error.\nexpect=%s\nactual=%v", expected, actual)
+		t.Errorf("unexpected marshal result.\nexpect=%s\nactual=%s", expected, actual)
 	}
+	//var m2 interface{}
+	//err = Unmarshal([]byte(actual), m2)
+	//if err != nil {
+	//	t.Errorf("decoding error encountered: %v", err)
+	//}
+	//if diff := deep.Equal(m, m2); diff != nil {
+	//	t.Errorf("unexpected unmarshal result.\n%v", diff)
+	//}
 }
 
 func TestBasicTypes(t *testing.T) {
