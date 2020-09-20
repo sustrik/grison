@@ -89,7 +89,7 @@ func (enc *Encoder) marshalAny(obj reflect.Value) ([]byte, error) {
 		}
 		return enc.marshalAny(obj.Elem())
 	case reflect.Interface:
-		panic("interface")
+		return enc.marshalInterface(obj)
 	case reflect.Struct:
 		return enc.marshalStruct(obj)
 	case reflect.Slice:
@@ -106,6 +106,17 @@ func (enc *Encoder) marshalAny(obj reflect.Value) ([]byte, error) {
 		}
 		return r, nil
 	}
+}
+
+func (enc *Encoder) marshalInterface(obj reflect.Value) ([]byte, error) {
+	if obj.IsNil() {
+		return json.Marshal(nil)
+	}
+	tp := obj.Elem().Elem().Type()
+	if !enc.isNodeType(tp) {
+		return nil, fmt.Errorf("object behind an interface is not a node, it is %v", tp)
+	}
+	return enc.marshalNode(obj.Elem())
 }
 
 func (enc *Encoder) marshalNode(obj reflect.Value) ([]byte, error) {
