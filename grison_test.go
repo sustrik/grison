@@ -131,6 +131,22 @@ func TestInterface(t *testing.T) {
 	MarshalTest(t, m, `{"Node":{"#1":{"I":"^Node:#2"},"#2":{"I":"^Node:#1"}}}`)
 }
 
+func TestNil(t *testing.T) {
+	type Node struct {
+		P *int
+		I interface{}
+	}
+	type Master struct {
+		Node []*Node
+	}
+	m := &Master{
+		Node: []*Node{
+			&Node{},
+		},
+	}
+	MarshalTest(t, m, `{"Node":{"#1":{"I":null,"P":null}}}`)
+}
+
 func TestLoop(t *testing.T) {
 	type Node struct {
 		N *Node

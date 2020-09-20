@@ -84,10 +84,7 @@ func (enc *Encoder) getJSON() ([]byte, error) {
 func (enc *Encoder) marshalAny(obj reflect.Value) ([]byte, error) {
 	switch obj.Kind() {
 	case reflect.Ptr:
-		if enc.isNodeType(obj.Elem().Type()) {
-			return enc.marshalNode(obj)
-		}
-		return enc.marshalAny(obj.Elem())
+		return enc.marshalPtr(obj)
 	case reflect.Interface:
 		return enc.marshalInterface(obj)
 	case reflect.Struct:
@@ -106,6 +103,16 @@ func (enc *Encoder) marshalAny(obj reflect.Value) ([]byte, error) {
 		}
 		return r, nil
 	}
+}
+
+func (enc *Encoder) marshalPtr(obj reflect.Value) ([]byte, error) {
+	if obj.IsNil() {
+		return json.Marshal(nil)
+	}
+	if enc.isNodeType(obj.Elem().Type()) {
+		return enc.marshalNode(obj)
+	}
+	return enc.marshalAny(obj.Elem())
 }
 
 func (enc *Encoder) marshalInterface(obj reflect.Value) ([]byte, error) {
