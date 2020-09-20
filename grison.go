@@ -18,7 +18,7 @@ func jsonMarshal(v interface{}) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-type grison struct {
+type Encoder struct {
 	// Node types (the structs, not the pointers).
 	types map[reflect.Type]string
 	// Objects marshalled so far.
@@ -29,7 +29,7 @@ type grison struct {
 	id uint64
 }
 
-func (g *grison) extractSchema(m interface{}) error {
+func (g *Encoder) extractSchema(m interface{}) error {
 	g.types = make(map[reflect.Type]string)
 	g.objects = make(map[string]map[string]json.RawMessage)
 	g.ids = make(map[interface{}]string)
@@ -63,12 +63,12 @@ func (g *grison) extractSchema(m interface{}) error {
 	return nil
 }
 
-func (g *grison) isNodeType(tp reflect.Type) bool {
+func (g *Encoder) isNodeType(tp reflect.Type) bool {
 	_, ok := g.types[tp]
 	return ok
 }
 
-func (g *grison) allocate(obj interface{}) (string, bool) {
+func (g *Encoder) allocate(obj interface{}) (string, bool) {
 	// Use the pointer as a hash key.
 	id, ok := g.ids[obj]
 	if ok {
@@ -81,15 +81,15 @@ func (g *grison) allocate(obj interface{}) (string, bool) {
 	return id, false
 }
 
-func (g *grison) insert(tp reflect.Type, id string, rm json.RawMessage) {
+func (g *Encoder) insert(tp reflect.Type, id string, rm json.RawMessage) {
 	g.objects[g.types[tp]][id] = rm
 }
 
-func (g *grison) getJSON() ([]byte, error) {
+func (g *Encoder) getJSON() ([]byte, error) {
 	return jsonMarshal(g.objects)
 }
 
-func (g *grison) marshalAny(obj reflect.Value) ([]byte, error) {
+func (g *Encoder) marshalAny(obj reflect.Value) ([]byte, error) {
 	switch obj.Kind() {
 	case reflect.Ptr:
 		if g.isNodeType(obj.Elem().Type()) {
@@ -116,7 +116,7 @@ func (g *grison) marshalAny(obj reflect.Value) ([]byte, error) {
 	}
 }
 
-func (g *grison) marshalNode(obj reflect.Value) ([]byte, error) {
+func (g *Encoder) marshalNode(obj reflect.Value) ([]byte, error) {
 	id, exists := g.allocate(obj.Interface())
 	eobj := obj.Elem().Interface()
 	if !exists {
@@ -130,7 +130,7 @@ func (g *grison) marshalNode(obj reflect.Value) ([]byte, error) {
 	return jsonMarshal(ref)
 }
 
-func (g *grison) marshalStruct(obj reflect.Value) ([]byte, error) {
+func (g *Encoder) marshalStruct(obj reflect.Value) ([]byte, error) {
 	m := make(map[string]json.RawMessage)
 	tp := obj.Type()
 	for i := 0; i < obj.NumField(); i++ {
@@ -144,7 +144,7 @@ func (g *grison) marshalStruct(obj reflect.Value) ([]byte, error) {
 	return jsonMarshal(m)
 }
 
-func (g *grison) marshalSlice(obj reflect.Value) ([]byte, error) {
+func (g *Encoder) marshalSlice(obj reflect.Value) ([]byte, error) {
 	if obj.Type() == reflect.TypeOf([]byte{}) {
 		return jsonMarshal(obj.Interface())
 	}
@@ -159,7 +159,7 @@ func (g *grison) marshalSlice(obj reflect.Value) ([]byte, error) {
 	return jsonMarshal(s)
 }
 
-func (g *grison) marshalMap(obj reflect.Value) ([]byte, error) {
+func (g *Encoder) marshalMap(obj reflect.Value) ([]byte, error) {
 	m := make(map[string]json.RawMessage)
 	keys := obj.MapKeys()
 	for _, k := range keys {
@@ -174,7 +174,7 @@ func (g *grison) marshalMap(obj reflect.Value) ([]byte, error) {
 }
 
 func Marshal(m interface{}) ([]byte, error) {
-	var g grison
+	var g Encoder
 	err := g.extractSchema(m)
 	if err != nil {
 		return nil, err
