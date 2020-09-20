@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 )
@@ -36,25 +35,25 @@ func (g *grison) extractSchema(m interface{}) error {
 	g.ids = make(map[interface{}]string)
 	tp := reflect.TypeOf(m)
 	if tp.Kind() != reflect.Ptr {
-		return errors.New(fmt.Sprintf("Master structure must be passed as a pointer, is %T", m))
+		return fmt.Errorf("master structure must be passed as a pointer, is %T", m)
 	}
 	tp = tp.Elem()
 	if tp.Kind() != reflect.Struct {
-		return errors.New(fmt.Sprintf("Master structure is not a structure, is %T.", m))
+		return fmt.Errorf("master structure is not a structure, is %T", m)
 	}
 	for i := 0; i < tp.NumField(); i++ {
 		fldtp := tp.Field(i).Type
 		fldname := tp.Field(i).Name
 		if fldtp.Kind() != reflect.Slice && fldtp.Kind() != reflect.Map {
-			return errors.New(fmt.Sprintf("Master field %s, in not a map or a slice.", fldname))
+			return fmt.Errorf("master field %s, in not a map or a slice", fldname)
 		}
 		fldtp = fldtp.Elem()
 		if fldtp.Kind() != reflect.Ptr {
-			return errors.New(fmt.Sprintf("Master field %s doesn't contain pointers.", fldname))
+			return fmt.Errorf("master field %s doesn't contain pointers", fldname)
 		}
 		fldtp = fldtp.Elem()
 		if fldtp.Kind() != reflect.Struct {
-			return errors.New(fmt.Sprintf("Master field %s doesn't contain pointers to structs.", fldname))
+			return fmt.Errorf("master field %s doesn't contain pointers to structs", fldname)
 		}
 		// TODO: Check for duplicate types.
 		g.types[fldtp] = fldname
