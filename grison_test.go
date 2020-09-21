@@ -1,9 +1,11 @@
 package grison
 
 import (
+	"reflect"
 	"strings"
 	"testing"
-	// "github.com/go-test/deep"
+
+	"github.com/go-test/deep"
 )
 
 func MarshalTest(t *testing.T, m interface{}, expected string) {
@@ -15,14 +17,32 @@ func MarshalTest(t *testing.T, m interface{}, expected string) {
 	if actual != expected {
 		t.Errorf("unexpected marshal result.\nexpect=%s\nactual=%s", expected, actual)
 	}
-	//var m2 interface{}
-	//err = Unmarshal([]byte(actual), m2)
-	//if err != nil {
-	//	t.Errorf("decoding error encountered: %v", err)
-	//}
-	//if diff := deep.Equal(m, m2); diff != nil {
-	//	t.Errorf("unexpected unmarshal result.\n%v", diff)
-	//}
+	var m2 interface{}
+	m2 = reflect.New(reflect.TypeOf(m).Elem()).Interface()
+	err = Unmarshal([]byte(actual), m2)
+	if err != nil {
+		t.Errorf("decoding error encountered: %v", err)
+	}
+	if diff := deep.Equal(m, m2); diff != nil {
+		t.Errorf("unexpected unmarshal result.\n%v", diff)
+	}
+}
+
+func TestMimimal(t *testing.T) {
+	type Node struct {
+		A int
+	}
+	type Master struct {
+		Node []*Node
+	}
+	m := &Master{
+		Node: []*Node{
+			&Node{
+				A: 2,
+			},
+		},
+	}
+	MarshalTest(t, m, `{"Node":{"#1":{"A":2}}}`)
 }
 
 func TestBasicTypes(t *testing.T) {
@@ -99,9 +119,8 @@ func TestSlices(t *testing.T) {
 func TestMaps(t *testing.T) {
 	type Node struct {
 		A map[string]int
-		B map[int]string
-		C map[int]map[int]int
-		D map[int]int
+		B map[string]string
+		C map[string]map[string]int
 	}
 	type Master struct {
 		Node []*Node
@@ -110,16 +129,15 @@ func TestMaps(t *testing.T) {
 		Node: []*Node{
 			&Node{
 				A: map[string]int{"a": 1, "b": 2, "c": 3},
-				B: map[int]string{1: "a", 2: "b", 3: "c"},
-				C: map[int]map[int]int{
-					0: map[int]int{1: 2, 3: 4},
-					5: map[int]int{6: 7},
+				B: map[string]string{"1": "a", "2": "b", "3": "c"},
+				C: map[string]map[string]int{
+					"0": map[string]int{"1": 2, "3": 4},
+					"5": map[string]int{"6": 7},
 				},
-				D: map[int]int{},
 			},
 		},
 	}
-	MarshalTest(t, m, `{"Node":{"#1":{"A":{"a":1,"b":2,"c":3},"B":{"1":"a","2":"b","3":"c"},"C":{"0":{"1":2,"3":4},"5":{"6":7}},"D":{}}}}`)
+	MarshalTest(t, m, `{"Node":{"#1":{"A":{"a":1,"b":2,"c":3},"B":{"1":"a","2":"b","3":"c"},"C":{"0":{"1":2,"3":4},"5":{"6":7}}}}}`)
 }
 
 func TestInterface(t *testing.T) {

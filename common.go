@@ -9,6 +9,9 @@ func scrapeMasterStruct(m interface{}) (map[reflect.Type]string, map[string]refl
 	tps := make(map[reflect.Type]string)
 	nms := make(map[string]reflect.Type)
 	tp := reflect.TypeOf(m)
+	if tp == nil {
+		return nil, nil, fmt.Errorf("master structure is nil")
+	}
 	if tp.Kind() != reflect.Ptr {
 		return nil, nil, fmt.Errorf("master structure must be passed as a pointer, it is %T", m)
 	}
