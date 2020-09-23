@@ -38,5 +38,6 @@ func scrapeMasterStruct(m interface{}) (map[reflect.Type]string, map[string]refl
 		nms[fldname] = fldtp
 	}
 	// TODO: There should be no embedded node instances.
+	// TODO: Chan, Func, UnsafePointer is invalid
 	return tps, nms, nil
 }

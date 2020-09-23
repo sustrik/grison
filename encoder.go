@@ -71,6 +71,8 @@ func (enc *Encoder) marshalAny(obj reflect.Value) ([]byte, error) {
 		return enc.marshalStruct(obj)
 	case reflect.Slice:
 		return enc.marshalSlice(obj)
+	case reflect.Array:
+		return enc.marshalArray(obj)
 	case reflect.Map:
 		return enc.marshalMap(obj)
 	default:
@@ -134,10 +136,7 @@ func (enc *Encoder) marshalStruct(obj reflect.Value) ([]byte, error) {
 	return json.Marshal(m)
 }
 
-func (enc *Encoder) marshalSlice(obj reflect.Value) ([]byte, error) {
-	if obj.Type() == reflect.TypeOf([]byte{}) {
-		return json.Marshal(obj.Interface())
-	}
+func (enc *Encoder) marshalArray(obj reflect.Value) ([]byte, error) {
 	var s []json.RawMessage
 	for i := 0; i < obj.Len(); i++ {
 		elem, err := enc.marshalAny(obj.Index(i))
@@ -147,6 +146,13 @@ func (enc *Encoder) marshalSlice(obj reflect.Value) ([]byte, error) {
 		s = append(s, elem)
 	}
 	return json.Marshal(s)
+}
+
+func (enc *Encoder) marshalSlice(obj reflect.Value) ([]byte, error) {
+	if obj.Type() == reflect.TypeOf([]byte{}) {
+		return json.Marshal(obj.Interface())
+	}
+	return enc.marshalArray(obj)
 }
 
 func (enc *Encoder) marshalMap(obj reflect.Value) ([]byte, error) {

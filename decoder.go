@@ -9,29 +9,56 @@ import (
 
 type Decoder struct {
 	// Node types (the structs, not the pointers).
-	types map[reflect.Type]string
+	types  map[reflect.Type]string
+	names  map[string]reflect.Type
+	master reflect.Value
+	refmap map[string]reflect.Value
 }
 
 func NewDecoder(m interface{}) (*Decoder, error) {
-	tps, _, err := scrapeMasterStruct(m)
+	tps, nms, err := scrapeMasterStruct(m)
 	if err != nil {
 		return nil, err
 	}
 	return &Decoder{
-		types: tps,
+		types:  tps,
+		names:  nms,
+		master: reflect.ValueOf(m).Elem(),
+		refmap: make(map[string]reflect.Value),
 	}, nil
 }
 
 func (dec *Decoder) unmarshalPtr(b []byte, v reflect.Value) error {
-	// TODO: Handle nodes
-	if string(b) != "null" {
-		p := reflect.New(v.Type().Elem().Elem())
-		err := dec.unmarshalAny(b, p)
-		if err != nil {
-			return err
-		}
-		v.Elem().Set(p)
+	if string(b) == "null" {
+		return nil
 	}
+	if string(b[0:2]) == `"^` {
+		return dec.unmarshalRef(b, v)
+	}
+	p := reflect.New(v.Type().Elem().Elem())
+	err := dec.unmarshalAny(b, p)
+	if err != nil {
+		return err
+	}
+	v.Elem().Set(p)
+	return nil
+}
+
+func (dec *Decoder) unmarshalInterface(b []byte, v reflect.Value) error {
+	return dec.unmarshalPtr(b, v)
+}
+
+func (dec *Decoder) unmarshalRef(b []byte, v reflect.Value) error {
+	var ref string
+	err := json.Unmarshal(b, &ref)
+	if err != nil {
+		return err
+	}
+	obj, ok := dec.refmap[ref]
+	if !ok {
+		return fmt.Errorf("invalid reference %s", ref)
+	}
+	v.Elem().Set(obj)
 	return nil
 }
 
@@ -76,7 +103,7 @@ func (dec *Decoder) unmarshalMap(b []byte, v reflect.Value) error {
 }
 
 func (dec *Decoder) unmarshalSlice(b []byte, v reflect.Value) error {
-	if v.Type().Elem() == reflect.TypeOf([]byte{}) {
+	if v.Type().Elem().Elem() == reflect.TypeOf(byte(0)) {
 		return json.Unmarshal(b, v.Interface())
 	}
 	var rms []json.RawMessage
@@ -92,6 +119,21 @@ func (dec *Decoder) unmarshalSlice(b []byte, v reflect.Value) error {
 		}
 	}
 	v.Elem().Set(s)
+	return nil
+}
+
+func (dec *Decoder) unmarshalArray(b []byte, v reflect.Value) error {
+	var rms []json.RawMessage
+	err := json.Unmarshal(b, &rms)
+	if err != nil {
+		return err
+	}
+	for i, rm := range rms {
+		err = dec.unmarshalAny(rm, v.Elem().Index(i).Addr())
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -114,14 +156,19 @@ func (dec *Decoder) unmarshalString(b []byte, v reflect.Value) error {
 
 func (dec *Decoder) unmarshalAny(b []byte, v reflect.Value) error {
 	switch v.Elem().Kind() {
+	// TODO: Array
 	case reflect.Ptr:
 		return dec.unmarshalPtr(b, v)
+	case reflect.Interface:
+		return dec.unmarshalInterface(b, v)
 	case reflect.Struct:
 		return dec.unmarshalStruct(b, v)
 	case reflect.Map:
 		return dec.unmarshalMap(b, v)
 	case reflect.Slice:
 		return dec.unmarshalSlice(b, v)
+	case reflect.Array:
+		return dec.unmarshalArray(b, v)
 	case reflect.String:
 		return dec.unmarshalString(b, v)
 	default:
@@ -139,21 +186,31 @@ func Unmarshal(b []byte, m interface{}) error {
 	if err != nil {
 		return err
 	}
+	// Create empty shells of individual objects so that we
+	// can create pointers to them.
 	mv := reflect.ValueOf(m).Elem()
 	for tp, rms := range rmm {
 		fld := mv.FieldByName(tp)
 		if !fld.IsValid() {
 			return fmt.Errorf("unknown node type %s", tp)
 		}
+		// TODO: Deterministic order!
+		for id, _ := range rms {
+			v := reflect.New(fld.Type().Elem().Elem())
+			a := reflect.Append(fld, v)
+			fld.Set(a)
+			ref := fmt.Sprintf("^%s:%s", tp, id)
+			dec.refmap[ref] = v
+		}
+	}
+	// Now we can unmarshal individual nodes.
+	for tp, rms := range rmm {
 		for id, rm := range rms {
-			fmt.Printf("%s:%s\n", tp, id)
-			v := reflect.New(fld.Type().Elem())
-			err = dec.unmarshalAny(rm, v)
+			ref := fmt.Sprintf("^%s:%s", tp, id)
+			err = dec.unmarshalAny(rm, dec.refmap[ref])
 			if err != nil {
 				return err
 			}
-			a := reflect.Append(fld, v.Elem())
-			fld.Set(a)
 		}
 	}
 	return nil
