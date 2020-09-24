@@ -52,7 +52,8 @@ func (dec *Decoder) unmarshalPtr(b []byte, v reflect.Value) error {
 	if string(b) == "null" {
 		return nil
 	}
-	if string(b[0:2]) == `"^` {
+	_, ok := dec.types[v.Type().Elem().Elem()]
+	if ok {
 		return dec.unmarshalRef(b, v)
 	}
 	p := reflect.New(v.Type().Elem().Elem())
@@ -65,7 +66,10 @@ func (dec *Decoder) unmarshalPtr(b []byte, v reflect.Value) error {
 }
 
 func (dec *Decoder) unmarshalInterface(b []byte, v reflect.Value) error {
-	return dec.unmarshalPtr(b, v)
+	if string(b) == "null" {
+		return nil
+	}
+	return dec.unmarshalRef(b, v)
 }
 
 func (dec *Decoder) unmarshalRef(b []byte, v reflect.Value) error {
