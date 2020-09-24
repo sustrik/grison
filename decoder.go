@@ -22,7 +22,6 @@ package grison
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 )
@@ -73,10 +72,19 @@ func (dec *Decoder) unmarshalInterface(b []byte, v reflect.Value) error {
 }
 
 func (dec *Decoder) unmarshalRef(b []byte, v reflect.Value) error {
-	var ref string
-	err := json.Unmarshal(b, &ref)
+	var m map[string]string
+	err := json.Unmarshal(b, &m)
 	if err != nil {
 		return err
+	}
+	if len(m) != 1 {
+		return fmt.Errorf("invalid reference")
+	}
+	var k, ref string
+	for k, ref = range m {
+	}
+	if k != "$ref" {
+		return fmt.Errorf("invalid reference")
 	}
 	obj, ok := dec.refmap[ref]
 	if !ok {
@@ -161,26 +169,8 @@ func (dec *Decoder) unmarshalArray(b []byte, v reflect.Value) error {
 	return nil
 }
 
-func (dec *Decoder) unmarshalString(b []byte, v reflect.Value) error {
-	err := json.Unmarshal(b, v.Interface())
-	if err != nil {
-		return err
-	}
-	s := v.Elem().String()
-	if s[0:1] == "^" {
-		if s[1:2] == "^" {
-			v.Elem().Set(reflect.ValueOf(s[1:len(s)]))
-		} else {
-			// TODO: panic?
-			return errors.New("reference used as a string")
-		}
-	}
-	return nil
-}
-
 func (dec *Decoder) unmarshalAny(b []byte, v reflect.Value) error {
 	switch v.Elem().Kind() {
-	// TODO: Array
 	case reflect.Ptr:
 		return dec.unmarshalPtr(b, v)
 	case reflect.Interface:
@@ -193,8 +183,6 @@ func (dec *Decoder) unmarshalAny(b []byte, v reflect.Value) error {
 		return dec.unmarshalSlice(b, v)
 	case reflect.Array:
 		return dec.unmarshalArray(b, v)
-	case reflect.String:
-		return dec.unmarshalString(b, v)
 	default:
 		return json.Unmarshal(b, v.Interface())
 	}
@@ -223,14 +211,14 @@ func Unmarshal(b []byte, m interface{}) error {
 			v := reflect.New(fld.Type().Elem().Elem())
 			a := reflect.Append(fld, v)
 			fld.Set(a)
-			ref := fmt.Sprintf("^%s:%s", tp, id)
+			ref := fmt.Sprintf("%s:%s", tp, id)
 			dec.refmap[ref] = v
 		}
 	}
 	// Now we can unmarshal individual nodes.
 	for tp, rms := range rmm {
 		for id, rm := range rms {
-			ref := fmt.Sprintf("^%s:%s", tp, id)
+			ref := fmt.Sprintf("%s:%s", tp, id)
 			err = dec.unmarshalAny(rm, dec.refmap[ref])
 			if err != nil {
 				return err

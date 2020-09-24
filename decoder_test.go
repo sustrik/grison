@@ -42,7 +42,6 @@ func TestDecodeBasicTypes(t *testing.T) {
 	UnmarshalTestRaw(t, `-32`, -32)
 	UnmarshalTestRaw(t, `3.14`, 3.14)
 	UnmarshalTestRaw(t, `"foo"`, "foo")
-	UnmarshalTestRaw(t, `"^^foo"`, "^foo")
 }
 
 func TestDecodeSlice(t *testing.T) {

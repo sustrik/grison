@@ -96,14 +96,7 @@ func (enc *Encoder) marshalAny(obj reflect.Value) ([]byte, error) {
 	case reflect.Map:
 		return enc.marshalMap(obj)
 	default:
-		r, err := json.Marshal(obj.Interface())
-		if err != nil {
-			return []byte{}, err
-		}
-		if len(r) > 0 && string(r[0:2]) == "\"^" {
-			r = append([]byte("\"^"), r[1:]...)
-		}
-		return r, nil
+		return json.Marshal(obj.Interface())
 	}
 }
 
@@ -138,8 +131,8 @@ func (enc *Encoder) marshalNode(obj reflect.Value) ([]byte, error) {
 		}
 		enc.insert(reflect.TypeOf(eobj), id, rm)
 	}
-	ref := fmt.Sprintf("^%s:%s", enc.types[reflect.TypeOf(eobj)], id)
-	return json.Marshal(ref)
+	ref := fmt.Sprintf("%s:%s", enc.types[reflect.TypeOf(eobj)], id)
+	return json.Marshal(map[string]string{"$ref": ref})
 }
 
 func (enc *Encoder) marshalStruct(obj reflect.Value) ([]byte, error) {
