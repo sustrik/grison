@@ -49,7 +49,7 @@ func NewEncoder(m interface{}) (*Encoder, error) {
 		return nil, err
 	}
 	enc.types = tps
-	for nm, _ := range nms {
+	for nm := range nms {
 		enc.objects[nm] = make(map[string]json.RawMessage)
 	}
 	return enc, nil
@@ -79,6 +79,10 @@ func (enc *Encoder) insert(tp reflect.Type, id string, rm json.RawMessage) {
 
 func (enc *Encoder) getJSON() ([]byte, error) {
 	return json.Marshal(enc.objects)
+}
+
+func (enc *Encoder) getJSONIndent(prefix string, indent string) ([]byte, error) {
+	return json.MarshalIndent(enc.objects, prefix, indent)
 }
 
 func (enc *Encoder) marshalAny(obj reflect.Value) ([]byte, error) {
@@ -182,8 +186,7 @@ func (enc *Encoder) marshalMap(obj reflect.Value) ([]byte, error) {
 	return json.Marshal(m)
 }
 
-// Marshal encodes the supplied graph into grison format.
-func Marshal(m interface{}) ([]byte, error) {
+func marshalInternal(m interface{}) (*Encoder, error) {
 	enc, err := NewEncoder(m)
 	if err != nil {
 		return nil, err
@@ -197,6 +200,22 @@ func Marshal(m interface{}) ([]byte, error) {
 				return nil, err
 			}
 		}
+	}
+	return enc, nil
+}
+
+func MarshalIndent(m interface{}, prefix string, indent string) ([]byte, error) {
+	enc, err := marshalInternal(m)
+	if err != nil {
+		return nil, err
+	}
+	return enc.getJSONIndent(prefix, indent)
+}
+
+func Marshal(m interface{}) ([]byte, error) {
+	enc, err := marshalInternal(m)
+	if err != nil {
+		return nil, err
 	}
 	return enc.getJSON()
 }
