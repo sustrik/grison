@@ -29,19 +29,17 @@ import (
 type Decoder struct {
 	// Node types (the structs, not the pointers).
 	types  map[reflect.Type]string
-	names  map[string]reflect.Type
 	master reflect.Value
 	refmap map[string]reflect.Value
 }
 
 func NewDecoder(m interface{}) (*Decoder, error) {
-	tps, nms, err := scrapeMasterStruct(m)
+	tps, _, err := scrapeMasterStruct(m)
 	if err != nil {
 		return nil, err
 	}
 	return &Decoder{
 		types:  tps,
-		names:  nms,
 		master: reflect.ValueOf(m).Elem(),
 		refmap: make(map[string]reflect.Value),
 	}, nil
