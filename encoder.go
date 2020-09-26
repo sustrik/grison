@@ -147,6 +147,9 @@ func (enc *Encoder) marshalStruct(obj reflect.Value) ([]byte, error) {
 		if ft.ignore {
 			continue
 		}
+		if ft.omitEmpty && obj.Field(i).IsZero() {
+			continue
+		}
 		elem, err := enc.marshalAny(obj.Field(i))
 		if err != nil {
 			return []byte{}, err
