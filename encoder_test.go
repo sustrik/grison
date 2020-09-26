@@ -54,22 +54,22 @@ func TestMarshalIndent(t *testing.T) {
 }
 
 type Parent struct {
-	Name     string   `grison:"name"`
-	Sex      string   `grison:"sex"`
-	Spouse   *Parent  `grison:"spouse"`
-	Children []*Child `grison:"children"`
+	Name     string
+	Sex      string
+	Spouse   *Parent
+	Children []*Child
 }
 type Child struct {
-	Name   string  `grison:"name"`
-	Age    int     `grison:"Age"`
-	Father *Parent `grison:"father"`
-	Mother *Parent `grison:"mother"`
+	Name   string
+	Age    int
+	Father *Parent
+	Mother *Parent
 }
 
 func TestExample(t *testing.T) {
 	type Master struct {
-		Parents  []*Parent `grison:"parents"`
-		Children []*Child  `grison:"children"`
+		Parents  []*Parent
+		Children []*Child
 	}
 	m := &Master{
 		Parents: []*Parent{

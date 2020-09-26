@@ -36,22 +36,22 @@ err = grison.Unmarshal(b, &m2)
 
 ```go
 type Parent struct {
-	Name     string   `grison:"name"`
-	Sex      string   `grison:"sex"`
-	Spouse   *Parent  `grison:"spouse"`
-	Children []*Child `grison:"children"`
+	Name     string
+	Sex      string
+	Spouse   *Parent
+	Children []*Child
 }
 
 type Child struct {
-	Name   string  `grison:"name"`
-	Age    int     `grison:"Age"`
-	Father *Parent `grison:"father"`
-	Mother *Parent `grison:"mother"`
+	Name   string
+	Age    int
+	Father *Parent
+	Mother *Parent
 }
 
 type Master struct {
-    Parents  []*Parent `grison:"parents"`
-    Children []*Child  `grison:"children"`
+    Parents  []*Parent
+    Children []*Child
 }
 ```
 
@@ -59,38 +59,38 @@ The data structures above produce the following JSON output:
 
 ```json
 {
-    "children": {
+    "Children": {
         "#3": {
             "Age": 10,
-            "father": {"$ref": "parents:#2"},
-            "mother": {"$ref": "parents:#1"},
-            "name": "Carol"
+            "Father": {"$ref": "Parents:#2"},
+            "Mother": {"$ref": "Parents:#1"},
+            "Name": "Carol"
         },
         "#4": {
             "Age": 8,
-            "father": {"$ref": "parents:#2"},
-            "mother": {"$ref": "parents:#1"},
-            "name": "Dan"
+            "Father": {"$ref": "Parents:#2"},
+            "Mother": {"$ref": "Parents:#1"},
+            "Name": "Dan"
         }
     },
-    "parents": {
+    "Parents": {
         "#1": {
-            "children": [
-                {"$ref": "children:#3"},
-                {"$ref": "children:#4"}
+            "Children": [
+                {"$ref": "Children:#3"},
+                {"$ref": "Children:#4"}
             ],
-            "name": "Alice",
-            "sex": "Female",
-            "spouse": {"$ref": "parents:#2"}
+            "Name": "Alice",
+            "Sex": "Female",
+            "Spouse": {"$ref": "Parents:#2"}
         },
         "#2": {
-            "children": [
-                {"$ref": "children:#3"},
-                {"$ref": "children:#4"}
+            "Children": [
+                {"$ref": "Children:#3"},
+                {"$ref": "Children:#4"}
             ],
-            "name": "Bob",
-            "sex": "Male",
-            "spouse": {"$ref": "parents:#1"}
+            "Name": "Bob",
+            "Sex": "Male",
+            "Spouse": {"$ref": "Parents:#1"}
         }
     }
 }
