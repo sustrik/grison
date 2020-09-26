@@ -47,6 +47,17 @@ func TestMimimal(t *testing.T) {
 	MarshalTest(t, m, `{"Node":{"#1":{"A":2}}}`)
 }
 
+func TestNoNodes(t *testing.T) {
+	type Node struct{}
+	type Master struct {
+		Node []*Node
+	}
+	m := &Master{
+		Node: nil,
+	}
+	MarshalTest(t, m, `{"Node":{}}`)
+}
+
 func TestBasicTypes(t *testing.T) {
 	type Node struct {
 		A int
