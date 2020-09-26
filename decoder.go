@@ -121,6 +121,9 @@ func (dec *Decoder) unmarshalStruct(b []byte, v reflect.Value) error {
 }
 
 func (dec *Decoder) unmarshalMap(b []byte, v reflect.Value) error {
+	if string(b) == "null" {
+		return nil
+	}
 	var rmm map[string]json.RawMessage
 	err := json.Unmarshal(b, &rmm)
 	if err != nil {

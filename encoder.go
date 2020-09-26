@@ -182,6 +182,9 @@ func (enc *Encoder) marshalSlice(obj reflect.Value) ([]byte, error) {
 }
 
 func (enc *Encoder) marshalMap(obj reflect.Value) ([]byte, error) {
+	if obj.IsNil() {
+		return []byte("null"), nil
+	}
 	m := make(map[string]json.RawMessage)
 	keys := obj.MapKeys()
 	for _, k := range keys {

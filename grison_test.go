@@ -150,11 +150,13 @@ func TestMaps(t *testing.T) {
 				C: map[string]map[string]int{
 					"0": map[string]int{"1": 2, "3": 4},
 					"5": map[string]int{"6": 7},
+					"3": map[string]int{},
+					"9": nil,
 				},
 			},
 		},
 	}
-	MarshalTest(t, m, `{"Node":{"#1":{"A":{"a":1,"b":2,"c":3},"B":{"1":"a","2":"b","3":"c"},"C":{"0":{"1":2,"3":4},"5":{"6":7}}}}}`)
+	MarshalTest(t, m, `{"Node":{"#1":{"A":{"a":1,"b":2,"c":3},"B":{"1":"a","2":"b","3":"c"},"C":{"0":{"1":2,"3":4},"3":{},"5":{"6":7},"9":null}}}}`)
 }
 
 func TestInterface(t *testing.T) {
