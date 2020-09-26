@@ -35,7 +35,7 @@ type Decoder struct {
 }
 
 func NewDecoder(m interface{}) (*Decoder, error) {
-	tps, _, err := scrapeMasterStruct(m)
+	tps, _, _, err := scrapeMasterStruct(m)
 	if err != nil {
 		return nil, err
 	}

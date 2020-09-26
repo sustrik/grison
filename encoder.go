@@ -36,6 +36,8 @@ type Encoder struct {
 	ids map[interface{}]string
 	// Last generated object ID.
 	id uint64
+	// Types marked with omitempty tag.
+	omitEmpty []string
 }
 
 // NewEncoder creates new grison encoder, based on the supplied master structure.
@@ -44,11 +46,12 @@ func NewEncoder(m interface{}) (*Encoder, error) {
 		objects: make(map[string]map[string]json.RawMessage),
 		ids:     make(map[interface{}]string),
 	}
-	tps, nms, err := scrapeMasterStruct(m)
+	tps, nms, oe, err := scrapeMasterStruct(m)
 	if err != nil {
 		return nil, err
 	}
 	enc.types = tps
+	enc.omitEmpty = oe
 	for nm := range nms {
 		enc.objects[nm] = make(map[string]json.RawMessage)
 	}
@@ -78,11 +81,21 @@ func (enc *Encoder) insert(tp reflect.Type, id string, rm json.RawMessage) {
 }
 
 func (enc *Encoder) getJSON() ([]byte, error) {
+	enc.filterEmpty()
 	return json.Marshal(enc.objects)
 }
 
 func (enc *Encoder) getJSONIndent(prefix string, indent string) ([]byte, error) {
+	enc.filterEmpty()
 	return json.MarshalIndent(enc.objects, prefix, indent)
+}
+
+func (enc *Encoder) filterEmpty() {
+	for _, tp := range enc.omitEmpty {
+		if len(enc.objects[tp]) == 0 {
+			delete(enc.objects, tp)
+		}
+	}
 }
 
 func (enc *Encoder) marshalAny(obj reflect.Value) ([]byte, error) {
@@ -206,7 +219,8 @@ func marshalInternal(m interface{}) (*Encoder, error) {
 	ms := reflect.ValueOf(m).Elem()
 	for i := 0; i < ms.NumField(); i++ {
 		fldtp := ms.Type().Field(i)
-		if getFieldTags(fldtp).ignore {
+		ft := getFieldTags(fldtp)
+		if ft.ignore {
 			continue
 		}
 		fld := ms.Field(i)

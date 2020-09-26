@@ -280,8 +280,10 @@ func TestOmitEmpty(t *testing.T) {
 		B string `grison:"bar,omitempty"`
 		C int    `grison:",omitempty"`
 	}
+	type Noodle struct{}
 	type Master struct {
-		Node []*Node
+		Node   []*Node
+		Noodle []*Noodle `grison:",omitempty"`
 	}
 	m := &Master{
 		Node: []*Node{
