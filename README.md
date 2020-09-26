@@ -1,10 +1,8 @@
 # Grison - Graph JSON
 
-**Work in progress - do not use!**
-
 Like `encoding/json` but stores graphs instead of trees.
 
-Solves the following problems:
+Grison solves the following problems:
 
 * Loops in the graph.
 * Encoding and decoding of interface types.
@@ -21,7 +19,7 @@ type Master struct{
 }
 ```
 
-You can then marshal/unmarshal this master structure:
+You can then marshal/unmarshal this master structure as needed:
 
 ```go
 var m1 Master
@@ -30,6 +28,16 @@ b, err := grison.Marshal(&m1)
 ...
 var m2 Master
 err = grison.Unmarshal(b, &m2)
+```
+
+### Struct tags
+
+Struct tags work very much the same as with `encoding/json`:
+
+```go
+type Person struct {
+   Age int `grison:"age,omitempty"`
+}
 ```
 
 ### Example
@@ -55,7 +63,7 @@ type Master struct {
 }
 ```
 
-The data structures above produce the following JSON output:
+The data structures above can produce, for example, the following JSON:
 
 ```json
 {
