@@ -24,6 +24,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"sort"
 )
 
 type Decoder struct {
@@ -210,14 +211,20 @@ func Unmarshal(b []byte, m interface{}) error {
 		if !fld.IsValid() {
 			return fmt.Errorf("unknown node type %s", tp)
 		}
-		// TODO: Deterministic order!
+		// Order by IDs.
+		var ids []string
 		for id, _ := range rms {
+			ids = append(ids, id)
+		}
+		sort.Strings(ids)
+		s := reflect.MakeSlice(fld.Type(), len(ids), len(ids))
+		for i, id := range ids {
 			v := reflect.New(fld.Type().Elem().Elem())
-			a := reflect.Append(fld, v)
-			fld.Set(a)
+			s.Index(i).Set(v)
 			ref := fmt.Sprintf("%s:%s", tp, id)
 			dec.refmap[ref] = v
 		}
+		fld.Set(s)
 	}
 	// Now we can unmarshal individual nodes.
 	for tp, rms := range rmm {

@@ -53,7 +53,7 @@ func TestNoNodes(t *testing.T) {
 		Node []*Node
 	}
 	m := &Master{
-		Node: nil,
+		Node: []*Node{},
 	}
 	MarshalTest(t, m, `{"Node":{}}`)
 }
