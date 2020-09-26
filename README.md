@@ -11,7 +11,7 @@ Solves the following problems:
   to a concrete type.
 
 Given that there's no obvious "starting point" in a graph and, in fact,
-there may not be a single node from which all other nodes are reachable,
+there may not be a single node from which all the other nodes are reachable,
 grison requires that you create a "master" structure, i.e. a structure
 with pointers to all the nodes:
 
