@@ -149,15 +149,15 @@ func (enc *encoder) marshalNode(obj reflect.Value) ([]byte, error) {
 		id = obj.Elem().FieldByName(enc.opts.IDField).String()
 	}
 	id, exists := enc.allocate(obj.Interface(), id)
-	eobj := obj.Elem().Interface() // TODO: get rid of this back-and-forth
+	eobj := obj.Elem()
 	if !exists {
-		rm, err := enc.marshalStruct(reflect.ValueOf(eobj))
+		rm, err := enc.marshalStruct(eobj)
 		if err != nil {
 			return nil, err
 		}
-		enc.insert(reflect.TypeOf(eobj), id, rm)
+		enc.insert(eobj.Type(), id, rm)
 	}
-	ref := fmt.Sprintf("%s:%s", enc.types[reflect.TypeOf(eobj)], id)
+	ref := fmt.Sprintf("%s:%s", enc.types[eobj.Type()], id)
 	return json.Marshal(map[string]string{"$ref": ref})
 }
 
