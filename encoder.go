@@ -143,6 +143,9 @@ func (enc *Encoder) marshalStruct(obj reflect.Value) ([]byte, error) {
 	m := make(map[string]json.RawMessage)
 	tp := obj.Type()
 	for i := 0; i < obj.NumField(); i++ {
+		if isFieldIgnored(tp.Field(i).Tag) {
+			continue
+		}
 		key := tp.Field(i).Name
 		elem, err := enc.marshalAny(obj.Field(i))
 		if err != nil {
@@ -193,6 +196,10 @@ func marshalInternal(m interface{}) (*Encoder, error) {
 	}
 	ms := reflect.ValueOf(m).Elem()
 	for i := 0; i < ms.NumField(); i++ {
+		fldtp := ms.Type().Field(i)
+		if isFieldIgnored(fldtp.Tag) {
+			continue
+		}
 		fld := ms.Field(i)
 		for j := 0; j < fld.Len(); j++ {
 			_, err = enc.marshalAny(fld.Index(j))

@@ -40,6 +40,9 @@ func scrapeMasterStruct(m interface{}) (map[reflect.Type]string, map[string]refl
 		return nil, nil, fmt.Errorf("master structure is not a structure, it is %T", m)
 	}
 	for i := 0; i < tp.NumField(); i++ {
+		if isFieldIgnored(tp.Field(i).Tag) {
+			continue
+		}
 		fldtp := tp.Field(i).Type
 		fldname := tp.Field(i).Name
 		if fldtp.Kind() != reflect.Slice && fldtp.Kind() != reflect.Map {
@@ -60,4 +63,9 @@ func scrapeMasterStruct(m interface{}) (map[reflect.Type]string, map[string]refl
 	// TODO: There should be no embedded node instances.
 	// TODO: Chan, Func, UnsafePointer is invalid
 	return tps, nms, nil
+}
+
+func isFieldIgnored(tag reflect.StructTag) bool {
+	t := tag.Get("grison")
+	return t == "-"
 }

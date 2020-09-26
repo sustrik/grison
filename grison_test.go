@@ -220,3 +220,23 @@ func TestLoop(t *testing.T) {
 	m.Node[1].N = m.Node[0]
 	MarshalTest(t, m, `{"Node":{"#1":{"N":{"$ref":"Node:#2"}},"#2":{"N":{"$ref":"Node:#1"}}}}`)
 }
+
+func TestIgnore(t *testing.T) {
+	type Node struct {
+		A int `grison:"-"`
+		B int
+	}
+	type Master struct {
+		Foo  int `grison:"-"`
+		Node []*Node
+	}
+	m := &Master{
+		Node: []*Node{
+			&Node{
+				A: 0,
+				B: 4,
+			},
+		},
+	}
+	MarshalTest(t, m, `{"Node":{"#1":{"B":4}}}`)
+}
