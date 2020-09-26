@@ -160,7 +160,7 @@ func (enc *Encoder) marshalStruct(obj reflect.Value) ([]byte, error) {
 }
 
 func (enc *Encoder) marshalArray(obj reflect.Value) ([]byte, error) {
-	var s []json.RawMessage
+	s := make([]json.RawMessage, 0, obj.Len())
 	for i := 0; i < obj.Len(); i++ {
 		elem, err := enc.marshalAny(obj.Index(i))
 		if err != nil {
@@ -172,6 +172,9 @@ func (enc *Encoder) marshalArray(obj reflect.Value) ([]byte, error) {
 }
 
 func (enc *Encoder) marshalSlice(obj reflect.Value) ([]byte, error) {
+	if obj.IsNil() {
+		return []byte("null"), nil
+	}
 	if obj.Type() == reflect.TypeOf([]byte{}) {
 		return json.Marshal(obj.Interface())
 	}

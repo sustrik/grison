@@ -140,6 +140,9 @@ func (dec *Decoder) unmarshalMap(b []byte, v reflect.Value) error {
 }
 
 func (dec *Decoder) unmarshalSlice(b []byte, v reflect.Value) error {
+	if string(b) == "null" {
+		return nil
+	}
 	if v.Type().Elem().Elem() == reflect.TypeOf(byte(0)) {
 		return json.Unmarshal(b, v.Interface())
 	}

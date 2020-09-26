@@ -103,11 +103,12 @@ func TestSlices(t *testing.T) {
 					[]int{4, 5},
 					[]int{6},
 					[]int{},
+					nil,
 				},
 			},
 		},
 	}
-	MarshalTest(t, m, `{"Node":{"#1":{"A":["a","b","c"],"B":[[4,5],[6],null]}}}`)
+	MarshalTest(t, m, `{"Node":{"#1":{"A":["a","b","c"],"B":[[4,5],[6],[],null]}}}`)
 }
 
 func TestArrays(t *testing.T) {
