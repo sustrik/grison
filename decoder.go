@@ -199,7 +199,10 @@ func (dec *decoder) unmarshalAny(b []byte, v reflect.Value) error {
 	}
 }
 
-func Unmarshal(b []byte, m interface{}) error {
+type UnmarshalOpts struct {
+}
+
+func UnmarshalWithOpts(b []byte, m interface{}, opts UnmarshalOpts) error {
 	dec, err := newDecoder(m)
 	if err != nil {
 		return err
@@ -243,4 +246,8 @@ func Unmarshal(b []byte, m interface{}) error {
 		}
 	}
 	return nil
+}
+
+func Unmarshal(b []byte, m interface{}) error {
+	return UnmarshalWithOpts(b, m, UnmarshalOpts{})
 }

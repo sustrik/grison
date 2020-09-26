@@ -24,7 +24,10 @@ func TestMarshalIndent(t *testing.T) {
 			},
 		},
 	}
-	b, err := MarshalIndent(m, ">", "  ")
+	b, err := MarshalWithOpts(m, MarshalOpts{
+		Prefix: ">",
+		Indent: "  ",
+	})
 	if err != nil {
 		t.Errorf("encoding error encountered: %v", err)
 	}
@@ -101,7 +104,9 @@ func TestExample(t *testing.T) {
 	m.Children[0].Mother = m.Parents[0]
 	m.Children[1].Father = m.Parents[1]
 	m.Children[1].Mother = m.Parents[0]
-	b, err := MarshalIndent(m, "", "    ")
+	b, err := MarshalWithOpts(m, MarshalOpts{
+		Indent: "    ",
+	})
 	if err != nil {
 		t.Errorf("encoding error encountered: %v", err)
 	}

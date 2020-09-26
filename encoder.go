@@ -234,18 +234,22 @@ func marshalInternal(m interface{}) (*encoder, error) {
 	return enc, nil
 }
 
-func MarshalIndent(m interface{}, prefix string, indent string) ([]byte, error) {
+type MarshalOpts struct {
+	Prefix string
+	Indent string
+}
+
+func MarshalWithOpts(m interface{}, opts MarshalOpts) ([]byte, error) {
 	enc, err := marshalInternal(m)
 	if err != nil {
 		return nil, err
 	}
-	return enc.getJSONIndent(prefix, indent)
+	if opts.Prefix == "" && opts.Indent == "" {
+		return enc.getJSON()
+	}
+	return enc.getJSONIndent(opts.Prefix, opts.Indent)
 }
 
 func Marshal(m interface{}) ([]byte, error) {
-	enc, err := marshalInternal(m)
-	if err != nil {
-		return nil, err
-	}
-	return enc.getJSON()
+	return MarshalWithOpts(m, MarshalOpts{})
 }
