@@ -7,8 +7,7 @@ Like `encoding/json` but stores graphs instead of trees.
 Solves the following problems:
 
 * Loops in the graph.
-* Nodes in the graph referenced via interface rather than a pointer
-  to a concrete type.
+* Encoding and decoding of interface types.
 
 Given that there's no obvious "starting point" in a graph and, in fact,
 there may not be a single node from which all the other nodes are reachable,
