@@ -26,7 +26,7 @@ import (
 	"strings"
 )
 
-func scrapeMasterStruct(m interface{}) (map[reflect.Type]string, map[string]reflect.Type, []string, error) {
+func scrapeMasterStruct(m interface{}, idField string) (map[reflect.Type]string, map[string]reflect.Type, []string, error) {
 	tps := make(map[reflect.Type]string)
 	nms := make(map[string]reflect.Type)
 	oe := make([]string, 0)
@@ -58,6 +58,12 @@ func scrapeMasterStruct(m interface{}) (map[reflect.Type]string, map[string]refl
 		fldtp = fldtp.Elem()
 		if fldtp.Kind() != reflect.Struct {
 			return nil, nil, nil, fmt.Errorf("master field %s doesn't contain pointers to structs", fldname)
+		}
+		if idField != "" {
+			_, ok := fldtp.FieldByName(idField)
+			if !ok {
+				return nil, nil, nil, fmt.Errorf("node %s is missing %s field", fldtp, idField)
+			}
 		}
 		// TODO: Check for duplicate types.
 		tps[fldtp] = fldname

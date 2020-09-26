@@ -7,8 +7,8 @@ import (
 	//"github.com/go-test/deep"
 )
 
-func MarshalTest(t *testing.T, m interface{}, expected string) {
-	b, err := Marshal(m)
+func MarshalTestWithOpts(t *testing.T, m interface{}, expected string, mopts MarshalOpts, uopts UnmarshalOpts) {
+	b, err := MarshalWithOpts(m, mopts)
 	if err != nil {
 		t.Errorf("encoding error encountered: %v", err)
 	}
@@ -18,7 +18,7 @@ func MarshalTest(t *testing.T, m interface{}, expected string) {
 	}
 	var m2 interface{}
 	m2 = reflect.New(reflect.TypeOf(m).Elem()).Interface()
-	err = Unmarshal([]byte(actual), m2)
+	err = UnmarshalWithOpts([]byte(actual), m2, uopts)
 	if err != nil {
 		t.Errorf("decoding error encountered: %v", err)
 	}
@@ -28,6 +28,10 @@ func MarshalTest(t *testing.T, m interface{}, expected string) {
 	//if diff := deep.Equal(m, m2); diff != nil {
 	//	t.Errorf("unexpected unmarshal result.\n%v", diff)
 	//}
+}
+
+func MarshalTest(t *testing.T, m interface{}, expected string) {
+	MarshalTestWithOpts(t, m, expected, MarshalOpts{}, UnmarshalOpts{})
 }
 
 func TestMimimal(t *testing.T) {
@@ -293,4 +297,24 @@ func TestOmitEmpty(t *testing.T) {
 		},
 	}
 	MarshalTest(t, m, `{"Node":{"#1":{"C":3}}}`)
+}
+
+func TestIDs(t *testing.T) {
+	type Node struct {
+		ID string
+		I  int
+	}
+	type Master struct {
+		Node []*Node
+	}
+	m := &Master{
+		Node: []*Node{
+			&Node{
+				ID: "foo",
+				I:  33,
+			},
+		},
+	}
+	MarshalTestWithOpts(t, m, `{"Node":{"foo":{"I":33,"ID":"foo"}}}`,
+		MarshalOpts{IDField: "ID"}, UnmarshalOpts{})
 }

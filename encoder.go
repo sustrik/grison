@@ -38,15 +38,17 @@ type encoder struct {
 	id uint64
 	// Types marked with omitempty tag.
 	omitEmpty []string
+	opts      MarshalOpts
 }
 
 // newEncoder creates new grison encoder, based on the supplied master structure.
-func newEncoder(m interface{}) (*encoder, error) {
+func newEncoder(m interface{}, opts MarshalOpts) (*encoder, error) {
 	enc := &encoder{
 		objects: make(map[string]map[string]json.RawMessage),
 		ids:     make(map[interface{}]string),
+		opts:    opts,
 	}
-	tps, nms, oe, err := scrapeMasterStruct(m)
+	tps, nms, oe, err := scrapeMasterStruct(m, opts.IDField)
 	if err != nil {
 		return nil, err
 	}
@@ -63,15 +65,18 @@ func (enc *encoder) isNodeType(tp reflect.Type) bool {
 	return ok
 }
 
-func (enc *encoder) allocate(obj interface{}) (string, bool) {
+func (enc *encoder) allocate(obj interface{}, newid string) (string, bool) {
 	// Use the pointer as a hash key.
 	id, ok := enc.ids[obj]
 	if ok {
 		return id, true
 	}
-	// Generate new ID.
-	enc.id++
-	id = fmt.Sprintf("#%d", enc.id)
+	if newid == "" {
+		enc.id++
+		id = fmt.Sprintf("#%d", enc.id)
+	} else {
+		id = newid
+	}
 	enc.ids[obj] = id
 	return id, false
 }
@@ -139,8 +144,12 @@ func (enc *encoder) marshalInterface(obj reflect.Value) ([]byte, error) {
 }
 
 func (enc *encoder) marshalNode(obj reflect.Value) ([]byte, error) {
-	id, exists := enc.allocate(obj.Interface())
-	eobj := obj.Elem().Interface()
+	var id string
+	if enc.opts.IDField != "" {
+		id = obj.Elem().FieldByName(enc.opts.IDField).String()
+	}
+	id, exists := enc.allocate(obj.Interface(), id)
+	eobj := obj.Elem().Interface() // TODO: get rid of this back-and-forth
 	if !exists {
 		rm, err := enc.marshalStruct(reflect.ValueOf(eobj))
 		if err != nil {
@@ -211,8 +220,8 @@ func (enc *encoder) marshalMap(obj reflect.Value) ([]byte, error) {
 	return json.Marshal(m)
 }
 
-func marshalInternal(m interface{}) (*encoder, error) {
-	enc, err := newEncoder(m)
+func marshalInternal(m interface{}, opts MarshalOpts) (*encoder, error) {
+	enc, err := newEncoder(m, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -235,12 +244,13 @@ func marshalInternal(m interface{}) (*encoder, error) {
 }
 
 type MarshalOpts struct {
-	Prefix string
-	Indent string
+	Prefix  string
+	Indent  string
+	IDField string
 }
 
 func MarshalWithOpts(m interface{}, opts MarshalOpts) ([]byte, error) {
-	enc, err := marshalInternal(m)
+	enc, err := marshalInternal(m, opts)
 	if err != nil {
 		return nil, err
 	}
