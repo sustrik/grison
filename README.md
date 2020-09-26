@@ -34,6 +34,29 @@ err = grison.Unmarshal(b, &m2)
 
 ### Example
 
+```go
+type Parent struct {
+	Name     string   `grison:"name"`
+	Sex      string   `grison:"sex"`
+	Spouse   *Parent  `grison:"spouse"`
+	Children []*Child `grison:"children"`
+}
+
+type Child struct {
+	Name   string  `grison:"name"`
+	Age    int     `grison:"Age"`
+	Father *Parent `grison:"father"`
+	Mother *Parent `grison:"mother"`
+}
+
+type Master struct {
+    Parents  []*Parent `grison:"parents"`
+    Children []*Child  `grison:"children"`
+}
+```
+
+The data structures above produce the following JSON output:
+
 ```json
 {
     "children": {
