@@ -9,7 +9,7 @@ import (
 
 func UnmarshalTestRaw(t *testing.T, b string, v interface{}) {
 	type emptyMaster struct{}
-	dec, err := NewDecoder(&emptyMaster{})
+	dec, err := newDecoder(&emptyMaster{})
 	if err != nil {
 		t.Errorf("can't create decoder: %v", err)
 		return

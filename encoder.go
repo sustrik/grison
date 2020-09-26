@@ -26,8 +26,8 @@ import (
 	"reflect"
 )
 
-// Encoder handles encoding of graphs into grison format.
-type Encoder struct {
+// encoder handles encoding of graphs into grison format.
+type encoder struct {
 	// Node types (the structs, not the pointers).
 	types map[reflect.Type]string
 	// Objects marshalled so far.
@@ -40,9 +40,9 @@ type Encoder struct {
 	omitEmpty []string
 }
 
-// NewEncoder creates new grison encoder, based on the supplied master structure.
-func NewEncoder(m interface{}) (*Encoder, error) {
-	enc := &Encoder{
+// newEncoder creates new grison encoder, based on the supplied master structure.
+func newEncoder(m interface{}) (*encoder, error) {
+	enc := &encoder{
 		objects: make(map[string]map[string]json.RawMessage),
 		ids:     make(map[interface{}]string),
 	}
@@ -58,12 +58,12 @@ func NewEncoder(m interface{}) (*Encoder, error) {
 	return enc, nil
 }
 
-func (enc *Encoder) isNodeType(tp reflect.Type) bool {
+func (enc *encoder) isNodeType(tp reflect.Type) bool {
 	_, ok := enc.types[tp]
 	return ok
 }
 
-func (enc *Encoder) allocate(obj interface{}) (string, bool) {
+func (enc *encoder) allocate(obj interface{}) (string, bool) {
 	// Use the pointer as a hash key.
 	id, ok := enc.ids[obj]
 	if ok {
@@ -76,21 +76,21 @@ func (enc *Encoder) allocate(obj interface{}) (string, bool) {
 	return id, false
 }
 
-func (enc *Encoder) insert(tp reflect.Type, id string, rm json.RawMessage) {
+func (enc *encoder) insert(tp reflect.Type, id string, rm json.RawMessage) {
 	enc.objects[enc.types[tp]][id] = rm
 }
 
-func (enc *Encoder) getJSON() ([]byte, error) {
+func (enc *encoder) getJSON() ([]byte, error) {
 	enc.filterEmpty()
 	return json.Marshal(enc.objects)
 }
 
-func (enc *Encoder) getJSONIndent(prefix string, indent string) ([]byte, error) {
+func (enc *encoder) getJSONIndent(prefix string, indent string) ([]byte, error) {
 	enc.filterEmpty()
 	return json.MarshalIndent(enc.objects, prefix, indent)
 }
 
-func (enc *Encoder) filterEmpty() {
+func (enc *encoder) filterEmpty() {
 	for _, tp := range enc.omitEmpty {
 		if len(enc.objects[tp]) == 0 {
 			delete(enc.objects, tp)
@@ -98,7 +98,7 @@ func (enc *Encoder) filterEmpty() {
 	}
 }
 
-func (enc *Encoder) marshalAny(obj reflect.Value) ([]byte, error) {
+func (enc *encoder) marshalAny(obj reflect.Value) ([]byte, error) {
 	switch obj.Kind() {
 	case reflect.Ptr:
 		return enc.marshalPtr(obj)
@@ -117,7 +117,7 @@ func (enc *Encoder) marshalAny(obj reflect.Value) ([]byte, error) {
 	}
 }
 
-func (enc *Encoder) marshalPtr(obj reflect.Value) ([]byte, error) {
+func (enc *encoder) marshalPtr(obj reflect.Value) ([]byte, error) {
 	if obj.IsNil() {
 		return json.Marshal(nil)
 	}
@@ -127,7 +127,7 @@ func (enc *Encoder) marshalPtr(obj reflect.Value) ([]byte, error) {
 	return enc.marshalAny(obj.Elem())
 }
 
-func (enc *Encoder) marshalInterface(obj reflect.Value) ([]byte, error) {
+func (enc *encoder) marshalInterface(obj reflect.Value) ([]byte, error) {
 	if obj.IsNil() {
 		return json.Marshal(nil)
 	}
@@ -138,7 +138,7 @@ func (enc *Encoder) marshalInterface(obj reflect.Value) ([]byte, error) {
 	return enc.marshalNode(obj.Elem())
 }
 
-func (enc *Encoder) marshalNode(obj reflect.Value) ([]byte, error) {
+func (enc *encoder) marshalNode(obj reflect.Value) ([]byte, error) {
 	id, exists := enc.allocate(obj.Interface())
 	eobj := obj.Elem().Interface()
 	if !exists {
@@ -152,7 +152,7 @@ func (enc *Encoder) marshalNode(obj reflect.Value) ([]byte, error) {
 	return json.Marshal(map[string]string{"$ref": ref})
 }
 
-func (enc *Encoder) marshalStruct(obj reflect.Value) ([]byte, error) {
+func (enc *encoder) marshalStruct(obj reflect.Value) ([]byte, error) {
 	m := make(map[string]json.RawMessage)
 	tp := obj.Type()
 	for i := 0; i < obj.NumField(); i++ {
@@ -172,7 +172,7 @@ func (enc *Encoder) marshalStruct(obj reflect.Value) ([]byte, error) {
 	return json.Marshal(m)
 }
 
-func (enc *Encoder) marshalArray(obj reflect.Value) ([]byte, error) {
+func (enc *encoder) marshalArray(obj reflect.Value) ([]byte, error) {
 	s := make([]json.RawMessage, 0, obj.Len())
 	for i := 0; i < obj.Len(); i++ {
 		elem, err := enc.marshalAny(obj.Index(i))
@@ -184,7 +184,7 @@ func (enc *Encoder) marshalArray(obj reflect.Value) ([]byte, error) {
 	return json.Marshal(s)
 }
 
-func (enc *Encoder) marshalSlice(obj reflect.Value) ([]byte, error) {
+func (enc *encoder) marshalSlice(obj reflect.Value) ([]byte, error) {
 	if obj.IsNil() {
 		return []byte("null"), nil
 	}
@@ -194,7 +194,7 @@ func (enc *Encoder) marshalSlice(obj reflect.Value) ([]byte, error) {
 	return enc.marshalArray(obj)
 }
 
-func (enc *Encoder) marshalMap(obj reflect.Value) ([]byte, error) {
+func (enc *encoder) marshalMap(obj reflect.Value) ([]byte, error) {
 	if obj.IsNil() {
 		return []byte("null"), nil
 	}
@@ -211,8 +211,8 @@ func (enc *Encoder) marshalMap(obj reflect.Value) ([]byte, error) {
 	return json.Marshal(m)
 }
 
-func marshalInternal(m interface{}) (*Encoder, error) {
-	enc, err := NewEncoder(m)
+func marshalInternal(m interface{}) (*encoder, error) {
+	enc, err := newEncoder(m)
 	if err != nil {
 		return nil, err
 	}

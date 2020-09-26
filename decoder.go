@@ -27,26 +27,26 @@ import (
 	"sort"
 )
 
-type Decoder struct {
+type decoder struct {
 	// Node types (the structs, not the pointers).
 	types  map[reflect.Type]string
 	master reflect.Value
 	refmap map[string]reflect.Value
 }
 
-func NewDecoder(m interface{}) (*Decoder, error) {
+func newDecoder(m interface{}) (*decoder, error) {
 	tps, _, _, err := scrapeMasterStruct(m)
 	if err != nil {
 		return nil, err
 	}
-	return &Decoder{
+	return &decoder{
 		types:  tps,
 		master: reflect.ValueOf(m).Elem(),
 		refmap: make(map[string]reflect.Value),
 	}, nil
 }
 
-func (dec *Decoder) unmarshalPtr(b []byte, v reflect.Value) error {
+func (dec *decoder) unmarshalPtr(b []byte, v reflect.Value) error {
 	if string(b) == "null" {
 		return nil
 	}
@@ -63,14 +63,14 @@ func (dec *Decoder) unmarshalPtr(b []byte, v reflect.Value) error {
 	return nil
 }
 
-func (dec *Decoder) unmarshalInterface(b []byte, v reflect.Value) error {
+func (dec *decoder) unmarshalInterface(b []byte, v reflect.Value) error {
 	if string(b) == "null" {
 		return nil
 	}
 	return dec.unmarshalRef(b, v)
 }
 
-func (dec *Decoder) unmarshalRef(b []byte, v reflect.Value) error {
+func (dec *decoder) unmarshalRef(b []byte, v reflect.Value) error {
 	var m map[string]string
 	err := json.Unmarshal(b, &m)
 	if err != nil {
@@ -93,7 +93,7 @@ func (dec *Decoder) unmarshalRef(b []byte, v reflect.Value) error {
 	return nil
 }
 
-func (dec *Decoder) unmarshalStruct(b []byte, v reflect.Value) error {
+func (dec *decoder) unmarshalStruct(b []byte, v reflect.Value) error {
 	var rmm map[string]json.RawMessage
 	err := json.Unmarshal(b, &rmm)
 	if err != nil {
@@ -120,7 +120,7 @@ func (dec *Decoder) unmarshalStruct(b []byte, v reflect.Value) error {
 	return nil
 }
 
-func (dec *Decoder) unmarshalMap(b []byte, v reflect.Value) error {
+func (dec *decoder) unmarshalMap(b []byte, v reflect.Value) error {
 	if string(b) == "null" {
 		return nil
 	}
@@ -142,7 +142,7 @@ func (dec *Decoder) unmarshalMap(b []byte, v reflect.Value) error {
 	return nil
 }
 
-func (dec *Decoder) unmarshalSlice(b []byte, v reflect.Value) error {
+func (dec *decoder) unmarshalSlice(b []byte, v reflect.Value) error {
 	if string(b) == "null" {
 		return nil
 	}
@@ -165,7 +165,7 @@ func (dec *Decoder) unmarshalSlice(b []byte, v reflect.Value) error {
 	return nil
 }
 
-func (dec *Decoder) unmarshalArray(b []byte, v reflect.Value) error {
+func (dec *decoder) unmarshalArray(b []byte, v reflect.Value) error {
 	var rms []json.RawMessage
 	err := json.Unmarshal(b, &rms)
 	if err != nil {
@@ -180,7 +180,7 @@ func (dec *Decoder) unmarshalArray(b []byte, v reflect.Value) error {
 	return nil
 }
 
-func (dec *Decoder) unmarshalAny(b []byte, v reflect.Value) error {
+func (dec *decoder) unmarshalAny(b []byte, v reflect.Value) error {
 	switch v.Elem().Kind() {
 	case reflect.Ptr:
 		return dec.unmarshalPtr(b, v)
@@ -200,7 +200,7 @@ func (dec *Decoder) unmarshalAny(b []byte, v reflect.Value) error {
 }
 
 func Unmarshal(b []byte, m interface{}) error {
-	dec, err := NewDecoder(m)
+	dec, err := newDecoder(m)
 	if err != nil {
 		return err
 	}
