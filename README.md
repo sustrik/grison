@@ -31,3 +31,44 @@ b, err := grison.Marshal(&m1)
 var m2 Master
 err = grison.Unmarshal(b, &m2)
 ```
+
+### Example
+
+```json
+{
+    "children": {
+        "#3": {
+            "Age": 10,
+            "father": {"$ref": "parents:#2"},
+            "mother": {"$ref": "parents:#1"},
+            "name": "Carol"
+        },
+        "#4": {
+            "Age": 8,
+            "father": {"$ref": "parents:#2"},
+            "mother": {"$ref": "parents:#1"},
+            "name": "Dan"
+        }
+    },
+    "parents": {
+        "#1": {
+            "children": [
+                {"$ref": "children:#3"},
+                {"$ref": "children:#4"}
+            ],
+            "name": "Alice",
+            "sex": "Female",
+            "spouse": {"$ref": "parents:#2"}
+        },
+        "#2": {
+            "children": [
+                {"$ref": "children:#3"},
+                {"$ref": "children:#4"}
+            ],
+            "name": "Bob",
+            "sex": "Male",
+            "spouse": {"$ref": "parents:#1"}
+        }
+    }
+}
+```
