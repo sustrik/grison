@@ -82,7 +82,7 @@ func getFieldTags(fld reflect.StructField) fieldTags {
 	}
 	parts := strings.SplitN(t, ",", 2)
 	var ft fieldTags
-	if len(parts) == 0 {
+	if len(parts) == 0 || parts[0] == "" {
 		ft.name = fld.Name
 	} else {
 		ft.name = parts[0]

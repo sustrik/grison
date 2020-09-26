@@ -264,14 +264,17 @@ func TestOmitEmpty(t *testing.T) {
 	type Node struct {
 		A int    `grison:"foo,omitempty"`
 		B string `grison:"bar,omitempty"`
+		C int    `grison:",omitempty"`
 	}
 	type Master struct {
 		Node []*Node
 	}
 	m := &Master{
 		Node: []*Node{
-			&Node{},
+			&Node{
+				C: 3,
+			},
 		},
 	}
-	MarshalTest(t, m, `{"Node":{"#1":{}}}`)
+	MarshalTest(t, m, `{"Node":{"#1":{"C":3}}}`)
 }
