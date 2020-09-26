@@ -98,19 +98,24 @@ func (dec *Decoder) unmarshalStruct(b []byte, v reflect.Value) error {
 	if err != nil {
 		return err
 	}
-	for k, rm := range rmm {
-		fldtp, ok := v.Elem().Type().FieldByName(k)
-		if !ok || getFieldTags(fldtp).ignore {
-			return fmt.Errorf("unknown field %s", k)
+	tp := v.Elem().Type()
+	for i := 0; i < v.Elem().NumField(); i++ {
+		ft := getFieldTags(tp.Field(i))
+		if ft.ignore {
+			continue
 		}
-		fld := v.Elem().FieldByName(k)
+		fld := v.Elem().Field(i)
 		v := reflect.New(fld.Type())
-		err = dec.unmarshalAny(rm, v)
-		if err != nil {
-			return err
+		rm, ok := rmm[ft.name]
+		if ok {
+			err = dec.unmarshalAny(rm, v)
+			if err != nil {
+				return err
+			}
+			fld.Set(v.Elem())
 		}
-		fld.Set(v.Elem())
 	}
+	// TODO: Check that there are no unused elements left.
 	return nil
 }
 

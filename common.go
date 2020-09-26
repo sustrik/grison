@@ -74,6 +74,9 @@ type fieldTags struct {
 
 func getFieldTags(fld reflect.StructField) fieldTags {
 	t := fld.Tag.Get("grison")
+	if t == "" {
+		return fieldTags{name: fld.Name}
+	}
 	if t == "-" {
 		return fieldTags{ignore: true}
 	}

@@ -143,15 +143,15 @@ func (enc *Encoder) marshalStruct(obj reflect.Value) ([]byte, error) {
 	m := make(map[string]json.RawMessage)
 	tp := obj.Type()
 	for i := 0; i < obj.NumField(); i++ {
-		if getFieldTags(tp.Field(i)).ignore {
+		ft := getFieldTags(tp.Field(i))
+		if ft.ignore {
 			continue
 		}
-		key := tp.Field(i).Name
 		elem, err := enc.marshalAny(obj.Field(i))
 		if err != nil {
 			return []byte{}, err
 		}
-		m[key] = elem
+		m[ft.name] = elem
 	}
 	return json.Marshal(m)
 }

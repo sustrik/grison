@@ -240,3 +240,22 @@ func TestIgnore(t *testing.T) {
 	}
 	MarshalTest(t, m, `{"Node":{"#1":{"B":4}}}`)
 }
+
+func TestTags(t *testing.T) {
+	type Node struct {
+		A int `grison:"foo"`
+		B int `grison:"bar"`
+	}
+	type Master struct {
+		Node []*Node
+	}
+	m := &Master{
+		Node: []*Node{
+			&Node{
+				A: 2,
+				B: 4,
+			},
+		},
+	}
+	MarshalTest(t, m, `{"Node":{"#1":{"bar":4,"foo":2}}}`)
+}
