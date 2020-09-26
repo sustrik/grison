@@ -45,7 +45,7 @@ func scrapeMasterStruct(m interface{}) (map[reflect.Type]string, map[string]refl
 			continue
 		}
 		fldtp := tp.Field(i).Type
-		fldname := tp.Field(i).Name
+		fldname := getFieldTags(tp.Field(i)).name
 		if fldtp.Kind() != reflect.Slice && fldtp.Kind() != reflect.Map {
 			return nil, nil, fmt.Errorf("master field %s is not a map or slice, it is %v", fldname, fldtp)
 		}
@@ -91,4 +91,15 @@ func getFieldTags(fld reflect.StructField) fieldTags {
 		ft.omitEmpty = true
 	}
 	return ft
+}
+
+func getFieldByName(v reflect.Value, name string) reflect.Value {
+	for i := 0; i < v.Type().NumField(); i++ {
+		fld := v.Type().Field(i)
+		tags := getFieldTags(fld)
+		if tags.name == name {
+			return v.Field(i)
+		}
+	}
+	return reflect.Value{}
 }

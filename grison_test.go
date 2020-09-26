@@ -261,7 +261,7 @@ func TestTagNames(t *testing.T) {
 		B int `grison:"bar"`
 	}
 	type Master struct {
-		Node []*Node
+		Node []*Node `grison:"noodle"`
 	}
 	m := &Master{
 		Node: []*Node{
@@ -271,7 +271,7 @@ func TestTagNames(t *testing.T) {
 			},
 		},
 	}
-	MarshalTest(t, m, `{"Node":{"#1":{"bar":4,"foo":2}}}`)
+	MarshalTest(t, m, `{"noodle":{"#1":{"bar":4,"foo":2}}}`)
 }
 
 func TestOmitEmpty(t *testing.T) {

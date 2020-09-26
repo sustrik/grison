@@ -213,13 +213,13 @@ func Unmarshal(b []byte, m interface{}) error {
 	// can create pointers to them.
 	mv := reflect.ValueOf(m).Elem()
 	for tp, rms := range rmm {
-		fld := mv.FieldByName(tp)
+		fld := getFieldByName(mv, tp)
 		if !fld.IsValid() {
 			return fmt.Errorf("unknown node type %s", tp)
 		}
 		// Order by IDs.
 		var ids []string
-		for id, _ := range rms {
+		for id := range rms {
 			ids = append(ids, id)
 		}
 		sort.Strings(ids)
