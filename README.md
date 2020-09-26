@@ -36,17 +36,17 @@ err = grison.Unmarshal(b, &m2)
 
 ```go
 type Parent struct {
-	Name     string
-	Sex      string
-	Spouse   *Parent
-	Children []*Child
+    Name     string
+    Sex      string
+    Spouse   *Parent
+    Children []*Child
 }
 
 type Child struct {
-	Name   string
-	Age    int
-	Father *Parent
-	Mother *Parent
+    Name   string
+    Age    int
+    Father *Parent
+    Mother *Parent
 }
 
 type Master struct {
