@@ -100,7 +100,7 @@ func (dec *Decoder) unmarshalStruct(b []byte, v reflect.Value) error {
 	}
 	for k, rm := range rmm {
 		fldtp, ok := v.Elem().Type().FieldByName(k)
-		if !ok || isFieldIgnored(fldtp.Tag) {
+		if !ok || getFieldTags(fldtp).ignore {
 			return fmt.Errorf("unknown field %s", k)
 		}
 		fld := v.Elem().FieldByName(k)

@@ -23,6 +23,7 @@ package grison
 import (
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 func scrapeMasterStruct(m interface{}) (map[reflect.Type]string, map[string]reflect.Type, error) {
@@ -40,7 +41,7 @@ func scrapeMasterStruct(m interface{}) (map[reflect.Type]string, map[string]refl
 		return nil, nil, fmt.Errorf("master structure is not a structure, it is %T", m)
 	}
 	for i := 0; i < tp.NumField(); i++ {
-		if isFieldIgnored(tp.Field(i).Tag) {
+		if getFieldTags(tp.Field(i)).ignore {
 			continue
 		}
 		fldtp := tp.Field(i).Type
@@ -65,7 +66,26 @@ func scrapeMasterStruct(m interface{}) (map[reflect.Type]string, map[string]refl
 	return tps, nms, nil
 }
 
-func isFieldIgnored(tag reflect.StructTag) bool {
-	t := tag.Get("grison")
-	return t == "-"
+type fieldTags struct {
+	ignore    bool
+	omitEmpty bool
+	name      string
+}
+
+func getFieldTags(fld reflect.StructField) fieldTags {
+	t := fld.Tag.Get("grison")
+	if t == "-" {
+		return fieldTags{ignore: true}
+	}
+	parts := strings.SplitN(t, ",", 2)
+	var ft fieldTags
+	if len(parts) == 0 {
+		ft.name = fld.Name
+	} else {
+		ft.name = parts[0]
+	}
+	if len(parts) == 2 && parts[1] == "omitempty" {
+		ft.omitEmpty = true
+	}
+	return ft
 }
