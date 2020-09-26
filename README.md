@@ -1,5 +1,7 @@
 # Grison - Graph JSON
 
+**Work in progress - do not use!**
+
 Like `encoding/json` but stores graphs instead of trees.
 
 Solves the following problems:
