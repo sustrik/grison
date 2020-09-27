@@ -40,6 +40,29 @@ type Person struct {
 }
 ```
 
+### Marshal options
+
+To get indented output, use `Prefix` and `Indent` options.
+
+```go
+b, err := MarshalWithOpts(m, MarshalOpts{
+    Prefix: "> ",
+    Indent: "  ",
+})
+```
+
+Node IDs in the JSON file are automatically generated (#1, #2 etc.) However, if `GetIDs` option is set, `GetID` function will be called on each node and the result will be used as the ID. If a node doesn't implement `GetID` function, marshaling will fail with an appropriate error.
+
+```go
+b, err := MarshalWithOpts(m, MarshalOpts{
+    GetIDs: true,
+})
+```
+
+### Unmarshal options
+
+At the moment there are no unmarshal options.
+
 ### Example
 
 ```go
