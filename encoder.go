@@ -48,7 +48,7 @@ func newEncoder(m interface{}, opts MarshalOpts) (*encoder, error) {
 		ids:     make(map[interface{}]string),
 		opts:    opts,
 	}
-	tps, nms, oe, err := scrapeMasterStruct(m, opts.IDField)
+	tps, nms, oe, err := scrapeMasterStruct(m, opts.GetIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -151,8 +151,8 @@ func (enc *encoder) marshalInterface(obj reflect.Value) ([]byte, error) {
 
 func (enc *encoder) marshalNode(obj reflect.Value) ([]byte, error) {
 	var id string
-	if enc.opts.IDField != "" {
-		id = obj.Elem().FieldByName(enc.opts.IDField).String()
+	if enc.opts.GetIDs {
+		id = obj.Interface().(IDProvider).GetID()
 	}
 	id, exists := enc.allocate(obj.Interface(), id)
 	eobj := obj.Elem()
@@ -249,10 +249,14 @@ func marshalInternal(m interface{}, opts MarshalOpts) (*encoder, error) {
 	return enc, nil
 }
 
+type IDProvider interface {
+	GetID() string
+}
+
 type MarshalOpts struct {
-	Prefix  string
-	Indent  string
-	IDField string
+	Prefix string
+	Indent string
+	GetIDs bool
 }
 
 func MarshalWithOpts(m interface{}, opts MarshalOpts) ([]byte, error) {

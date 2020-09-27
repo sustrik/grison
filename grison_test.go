@@ -299,24 +299,29 @@ func TestOmitEmpty(t *testing.T) {
 	MarshalTest(t, m, `{"Node":{"#1":{"C":3}}}`)
 }
 
+type Node1 struct {
+	ID string
+	I  int
+}
+
+func (n *Node1) GetID() string {
+	return n.ID
+}
+
 func TestIDs(t *testing.T) {
-	type Node struct {
-		ID string
-		I  int
-	}
 	type Master struct {
-		Node []*Node
+		Node1 []*Node1
 	}
 	m := &Master{
-		Node: []*Node{
-			&Node{
+		Node1: []*Node1{
+			&Node1{
 				ID: "foo",
 				I:  33,
 			},
 		},
 	}
-	MarshalTestWithOpts(t, m, `{"Node":{"foo":{"I":33,"ID":"foo"}}}`,
-		MarshalOpts{IDField: "ID"}, UnmarshalOpts{})
+	MarshalTestWithOpts(t, m, `{"Node1":{"foo":{"I":33,"ID":"foo"}}}`,
+		MarshalOpts{GetIDs: true}, UnmarshalOpts{})
 }
 
 type Prop int
