@@ -1,0 +1,131 @@
+#!/usr/bin/env python3
+
+import io
+import json
+import os
+import tempfile
+import sys
+import webbrowser
+
+header = """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>grison view</title>
+        <style>
+            body {
+                font-family: "Courier New", Courier, monospace
+            }
+            a {
+                color: red;
+            } 
+            .prop {
+                color: blue;
+            } 
+        </style>
+    </head>
+    <body>
+"""
+footer = """
+    </body>
+    </html>
+"""
+
+pad = 4 * "&nbsp;"
+
+def render_dict(obj, indent):
+    ind = 4 * indent * "&nbsp;"
+    out = "{"
+    for k in sorted(obj):
+        out += "<br>"
+        out += (indent + 1) * pad
+        out += """<span class="prop">%s</span>: """ % k
+        out += render(obj[k], indent + 1)
+    out += "<br>"
+    out += indent * pad
+    out += "}"
+    return out
+
+def render_list(obj, indent):
+    out = "["
+    for item in obj:
+        out += "<br>"
+        out += (indent + 1) * pad
+        out += render(item, indent + 1)
+    out += "<br>"
+    out += indent * pad
+    out += "]"
+    return out
+
+def render_ref(obj, ident):
+    ref = obj["$ref"]
+    bid = ref.encode('utf-8').hex()
+    return """<a href="node_%s.html">%s</a>""" % (bid, ref)
+
+def render(obj, indent):
+    if isinstance(obj, dict):
+        if len(obj) == 1 and "$ref" in obj:
+            return render_ref(obj, indent)
+        return render_dict(obj, indent)
+    if isinstance(obj, list):
+        return render_list(obj, indent)
+    sio = io.StringIO()
+    json.dump(obj, sio)
+    return sio.getvalue()
+
+# parse the arguments
+if len(sys.argv) is not 2:
+    print("usage: view <grison-file-name>")
+    sys.exit(1)
+filename = sys.argv[1]
+
+# load the grison file
+with open(filename, 'r') as f:
+    master = json.load(f)
+
+# create a temporary directory to store the pages
+tmp = tempfile.mkdtemp()
+
+# create main page
+index = header
+
+for typename in sorted(master):
+    index += """
+        <a href="type_%s.html">%s</a><br>
+    """ % (typename, typename)
+index += footer
+with open(os.path.join(tmp, "index.html"), "w") as f:
+    f.write(index)
+
+# create type pages
+for typename in sorted(master):
+    typepage = header
+    for id in sorted(master[typename]):
+        ref = "%s:%s" % (typename, id)
+        bid = ref.encode('utf-8').hex()
+        typepage += """
+            <a href="node_%s.html">%s</a><br>
+        """ % (bid, id)
+    typepage += footer
+    with open(os.path.join(tmp, "type_%s.html" % typename), "w") as f:
+        f.write(typepage)
+
+# create node pages
+for typename in sorted(master):
+    for id in sorted(master[typename]):
+        nodepage = header
+        nodepage += """
+            <h3>%s:%s</h3>
+        """ % (typename, id)
+        for prop in sorted(master[typename][id]):
+            nodepage += """<span class="prop">%s</span>: """ % (prop)
+            nodepage += render(master[typename][id][prop], 0)
+            nodepage += "</br>"
+        nodepage += footer
+        ref = "%s:%s" % (typename, id)
+        bid = ref.encode('utf-8').hex()
+        with open(os.path.join(tmp, 'node_%s.html' % bid), 'w') as f:
+            f.write(nodepage)
+
+webbrowser.open(os.path.join(tmp, "index.html"), new=2)
