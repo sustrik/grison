@@ -104,6 +104,12 @@ func (enc *encoder) filterEmpty() {
 }
 
 func (enc *encoder) marshalAny(obj reflect.Value) ([]byte, error) {
+	if obj.CanAddr() {
+		_, ok := obj.Addr().Interface().(json.Marshaler)
+		if ok {
+			return json.Marshal(obj.Addr().Interface())
+		}
+	}
 	switch obj.Kind() {
 	case reflect.Ptr:
 		return enc.marshalPtr(obj)

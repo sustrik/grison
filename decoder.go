@@ -181,6 +181,10 @@ func (dec *decoder) unmarshalArray(b []byte, v reflect.Value) error {
 }
 
 func (dec *decoder) unmarshalAny(b []byte, v reflect.Value) error {
+	_, ok := v.Interface().(json.Unmarshaler)
+	if ok {
+		return json.Unmarshal(b, v.Interface())
+	}
 	switch v.Elem().Kind() {
 	case reflect.Ptr:
 		return dec.unmarshalPtr(b, v)

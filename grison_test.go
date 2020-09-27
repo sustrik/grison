@@ -318,3 +318,34 @@ func TestIDs(t *testing.T) {
 	MarshalTestWithOpts(t, m, `{"Node":{"foo":{"I":33,"ID":"foo"}}}`,
 		MarshalOpts{IDField: "ID"}, UnmarshalOpts{})
 }
+
+type Prop int
+
+func (p *Prop) MarshalJSON() ([]byte, error) {
+	return []byte(`"foo"`), nil
+}
+
+func (p *Prop) UnmarshalJSON(data []byte) error {
+	*p = 33
+	return nil
+}
+
+func TestCustomMarshaler(t *testing.T) {
+	type Node struct {
+		P  Prop
+		PP *Prop
+	}
+	type Master struct {
+		Node []*Node
+	}
+	var prop Prop = 33
+	m := &Master{
+		Node: []*Node{
+			&Node{
+				P:  33,
+				PP: &prop,
+			},
+		},
+	}
+	MarshalTest(t, m, `{"Node":{"#1":{"P":"foo","PP":"foo"}}}`)
+}
